@@ -1,0 +1,175 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "",
+    "Parameters": {
+        "ProjectName": {
+            "Type": "String",
+            "Description": "Project name.",
+            "Default": ""
+        },
+        "CanaryRelease": {
+            "Type": "String",
+            "Description": "The identifier of canary release.",
+            "Default": ""           
+        },
+        "Cluster": {
+            "Type": "String",
+            "Description": "ARN of cluster used for deployment.",
+            "Default": ""
+        },
+        "ClusterName": {
+            "Type": "String",
+            "Description": "Name of cluster used for deployment.",
+            "Default": ""
+        },
+        "LoadBalancer": {
+            "Type": "String",
+            "Description": "The Amazon Resource Name (ARN) of the load balancer.",
+            "Default": ""
+        },
+        "ServiceName": {
+            "Type": "String",
+            "Description": "Service name.",
+            "MinLength": 1,
+            "Default": ""
+        },
+        "Version": {
+            "Type": "String",
+            "Description": "Version of service.",
+            "MinLength": 1,
+            "Default": ""
+        },
+        "Region": {
+            "Type": "String",
+            "Description": "Amazon Web Services Region to deploy.",
+            "Default": ""
+        },
+        "Environment": {
+            "Type": "String",
+            "Description": "Environment to deploy.",
+            "Default": ""
+        }
+    },
+    "Resources": {
+        "TaskExecutionRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "Environment"
+                            },
+                            "-",
+                            {
+                                "Ref": "ServiceName"
+                            },
+                            "-",
+                            {
+                                "Ref": "CanaryRelease"
+                            },
+                            "-ecs-task-execution-role"
+                        ]
+                    ]
+                },
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ecs-tasks.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "Path": "/",
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+                ]
+            }
+        },
+        "TaskDefinition": {
+            "Type": "AWS::ECS::TaskDefinition",
+            "Properties": {
+                "Tags": [
+                    {
+                        "Key":"Project",
+                        "Value": {
+                            "Ref" : "ProjectName"
+                        }
+                    },
+                    {
+                        "Key":"Service",
+                        "Value": {
+                            "Ref" : "ServiceName"
+                        }
+                    },{
+                        "Key":"Version",
+                        "Value": {
+                            "Ref" : "Version"
+                        }
+                    },{
+                        "Key":"CanaryRelease",
+                        "Value": {
+                            "Ref" : "CanaryRelease"
+                        }
+                    }
+
+                ],
+                "Family": {
+                    "Fn::Join": [
+                        "-",
+                        [
+                            {
+                                "Ref": "ServiceName"
+                            },
+                            {
+                                "Ref": "CanaryRelease"
+                            }
+                        ]
+                    ]
+                },
+                "ExecutionRoleArn": {
+                    "Ref": "TaskExecutionRole"
+                },
+                "ContainerDefinitions": []
+            }
+        },
+        "Service": {
+            "Type": "AWS::ECS::Service",
+            "Properties": {
+                "Cluster": {
+                    "Ref": "Cluster"
+                    } 
+                ,
+                "DesiredCount": 0,
+                "LaunchType": "EC2",
+                "ServiceName": {
+                    "Fn::Join": [
+                        "-",
+                        [
+                            {
+                                "Ref": "ServiceName"
+                            },
+                            {
+                                "Ref": "CanaryRelease"
+                            }
+                        ]
+                    ]
+                },
+                "TaskDefinition": {
+                    "Ref": "TaskDefinition"
+                },
+                "SchedulingStrategy": "REPLICA",
+                "LoadBalancers": []
+            }
+        }
+    }
+}

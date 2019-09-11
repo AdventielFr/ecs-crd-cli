@@ -1,0 +1,249 @@
+import boto3
+
+from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
+from ecs_crd.prepareDeploymentIamPoliciesStep import PrepareDeploymentIamPoliciesStep
+
+class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
+    
+    def __init__(self, infos, logger):
+        """initializes a new instance of the class"""
+        super().__init__(infos,'Prepare deployment ( Listeners )', logger)
+
+    def _on_execute(self):
+        """operation containing the processing performed by this step"""
+        try:
+            self.logger.info('')
+            self.logger.info('Listener infos :')
+            self.logger.info(''.ljust(50, '-'))
+
+            cfn = self.infos.green_infos.stack['Resources']['Service']['Properties']['LoadBalancers']
+            for item in cfn:
+                target_group = self.infos.green_infos.stack['Resources'][item['TargetGroupArn']['Ref']]
+                listener_infos = self._find_listener_infos(target_group)
+
+                container_name = next((x for x in target_group['Properties']['Tags'] if x['Key'] == 'Container'), None)['Value']
+                container_port = str(next((x for x in target_group['Properties']['Tags'] if x['Key'] == 'ContainerPort'), None)['Value'])
+            
+                if listener_infos == None:
+                    container_name = next((x for x in target_group['Properties']['Tags'] if x['Key'] == 'Container'), None)['Value']
+                    raise ValueError('Not found listener informations for container "{}:{}", target group port "{}"'.format(container_name, container_port, target_group['Properties']['Port'])) 
+                
+                listerner_rule_infos = None
+                if  self._exist_listener(listener_infos):
+                    listerner_rule_infos= self._find_listener_rule_infos(listener_infos)
+                # not exist listener rule , then create listener
+                if listerner_rule_infos == None:
+                    self._process_listener(listener_infos, item, target_group, container_name, container_port)
+                else:
+                # else create listener rule
+                    self._process_listener_rule(listener_infos, listerner_rule_infos, item, target_group, container_name, container_port)
+               
+            self.infos.save()
+            return PrepareDeploymentIamPoliciesStep(self.infos, self.logger)
+
+        except Exception as e:
+            self.infos.exit_code = 1
+            self.infos.exit_exception = e
+            self.logger.error(self.title, exc_info=True)
+        else:
+            return None
+
+    def _find_listener_rule_infos(self, listener_infos):
+        """find the listener rule informations"""
+        for item in self.infos.listener_rules_infos:
+            if item.configuration == listener_infos:
+                return item
+
+    def _convert_2_condition(self,item):
+        condition = {}
+        condition['Field'] = item['field'].lower()
+        
+        if condition['Field'] == 'host-header':
+            condition['HostHeaderConfig'] = {}
+            condition['HostHeaderConfig']['Values'] = []
+            for elmt in item['values']:
+                condition['HostHeaderConfig']['Values'].append(self.bind_data(elmt))
+
+        if condition['Field'] == 'http-header':
+            condition['HttpHeaderConfig'] = {}
+            condition['HttpHeaderConfig']['HttpHeaderName'] = item['name']
+            condition['HttpHeaderConfig']['Values'] = []
+            for elmt in item['values']:
+                condition['HttpHeaderConfig']['Values'].append(self.bind_data(elmt))
+
+        if condition['Field'] == 'http-request-method':
+            condition['HttpRequestMethodConfig'] = {}
+            condition['HttpRequestMethodConfig']['Values'] = []
+            for elmt in item['values']:
+                condition['HttpRequestMethodConfig']['Values'].append(self.bind_data(elmt))
+            
+        if condition['Field'] == 'path-pattern':
+            condition['PathPatternConfig'] = {}
+            condition['PathPatternConfig']['Values'] = []
+            for elmt in item['values']:
+                condition['PathPatternConfig']['Values'].append(self.bind_data(elmt))
+
+        if condition['Field'] == 'source-ip':
+            condition['SourceIpConfig'] = {}
+            condition['SourceIpConfig']['Values'] = []
+            for elmt in item['values']:
+                condition['SourceIpConfig']['Values'].append(self.bind_data(elmt))
+
+        return condition       
+   
+    def _process_listener_rule(self, listener_infos, listener_rule_infos, item, target_group, container_name, container_port):
+        """convert listener dto informations to cloudformation Application Load Balancer Rule"""
+        listener_rule = {}
+        listener_rule['Type'] = "AWS::ElasticLoadBalancingV2::ListenerRule"
+        listener_rule['Properties'] = {}
+        listener_rule['Properties']['Priority'] = self._calculate_avalaible_priority_rule(listener_rule_infos)
+        listener_rule['Properties']['ListenerArn'] = listener_rule_infos.listener_arn
+        
+        # Actions
+        listener_rule['Properties']['Actions'] = []
+        action = {}
+        action['Type']='forward'
+        action['TargetGroupArn'] = {}
+        action['TargetGroupArn']['Ref'] = item['TargetGroupArn']['Ref']
+        listener_rule['Properties']['Actions'].append(action)
+
+        # Conditions
+        listener_rule['Properties']['Conditions'] = []
+        self.logger.info('')
+        self.logger.info('  Listener Rule infos:')
+        for condition in listener_rule_infos.configuration['rule']['conditions']:
+            listener_rule['Properties']['Conditions'].append(self._convert_2_condition(condition))
+            host_port = str(self._find_host_port(container_name, container_port))
+            host_port = '(dynamic)' if host_port =='0' else host_port
+            self.logger.info('      [Rule]:{} -> [listener]:{} -> [target group]:{} -> [host]:{} -> [container] {}:{}'.format(listener_rule['Properties']['Priority'], listener_rule_infos.configuration['port'], target_group['Properties']['Port'], host_port, container_name, container_port))
+        
+        self.infos.green_infos.stack['Resources'][item['TargetGroupArn']['Ref'].replace('TargetGroup','ListenerRule')] = listener_rule
+        
+        # certificates
+        certificates = self._find_certificates(listener_infos)
+        if len(certificates) > 0:
+            self.logger.info('')
+            self.logger.info('  Listener Certificate infos:')
+            listener_certificate = {}
+            listener_certificate['Type']='AWS::ElasticLoadBalancingV2::ListenerCertificate'
+            listener_certificate['Properties'] = {}
+            listener_certificate['Properties']['Certificates'] = []
+            for cert in certificates:
+                certificate = {}
+                certificate['CertificateArn'] = cert
+                listener_certificate['Properties']['Certificates'].append(certificate)
+                self.logger.info('      Certificate Arn:{}'.format(cert))
+            listener_certificate['Properties']['ListenerArn'] = listener_rule_infos.listener_arn
+            self.infos.green_infos.stack['Resources']['ListenerCertificate'] = listener_certificate
+
+    
+    def _process_listener(self, listener_infos, item, target_group, container_name, container_port):
+        """convert listener dto informations to cloudformation Application Load Balancer Listener"""
+        # Resource
+        listener = {}
+        listener['Type'] = "AWS::ElasticLoadBalancingV2::Listener"
+        listener['Properties'] = {}
+        listener['Properties']['Port'] = listener_infos['port']
+        if 'protocol' in listener_infos:
+            listener['Properties']['Protocol'] = listener_infos['protocol'].upper()
+        else:
+            listener['Properties']['Protocol'] = 'HTTP'
+        
+        if listener['Properties']['Protocol'] == 'HTTPS':
+            listener['Properties']['SslPolicy'] = 'ELBSecurityPolicy-2016-08'
+            listener['Properties']['Certificates']=[]
+            for cert in self._find_certificates(listener_infos):
+                certificate = {}
+                certificate['CertificateArn'] = cert
+                listener['Properties']['Certificates'].append(certificate)
+    
+        listener['Properties']['LoadBalancerArn'] = {}
+        listener['Properties']['LoadBalancerArn']['Ref']= "LoadBalancer"
+
+        listener['Properties']['DefaultActions'] = []
+        action = {}
+        action['Type']='forward'
+        action['TargetGroupArn'] = {}
+        action['TargetGroupArn']['Ref'] = item['TargetGroupArn']['Ref']
+        listener['Properties']['DefaultActions'].append(action)
+        
+        host_port = str(self._find_host_port(container_name, container_port))
+        host_port = '(dynamic)' if host_port =='0' else host_port
+        self.logger.info(' [listener]:{} -> [target group]:{} -> [host]:{} -> [container] {}:{}'.format(listener_infos['port'], target_group['Properties']['Port'], host_port, container_name, container_port))
+        cfn_resource_listener_name = item['TargetGroupArn']['Ref'].replace('TargetGroup','Listener')
+        self.infos.green_infos.stack['Resources'][cfn_resource_listener_name] = listener
+
+    def _find_certificates(self, listener_infos):
+        """find all cerficates used by listener"""
+        result = []
+        if 'certificates' in listener_infos:
+            client = boto3.client('acm', region_name = self.infos.region)
+            response = client.list_certificates()
+            for cert in response['CertificateSummaryList']:
+                for certificate in listener_infos['certificates']:
+                    if cert['DomainName'] == self.bind_data(certificate):
+                        result.append(cert['CertificateArn'])
+        return result
+
+    def _exist_listener(self, listener_infos):
+        """check if the AWS Application Load Balancer Listerner exist""" 
+        client = boto3.client('elbv2', region_name = self.infos.region)
+        response = client.describe_listeners(LoadBalancerArn = self.infos.green_infos.alb_arn)
+        for listener in response['Listeners']:
+            if int(listener['Port']) == int(listener_infos['port']):
+                return True
+
+    def _find_listener_infos(self, target_group):
+        """find listener information in configuration"""
+        container_name =  list(filter(lambda x: x['Key']=='Container',target_group['Properties']['Tags']))[0]['Value']
+        container_port =  int(list(filter(lambda x: x['Key']=='ContainerPort',target_group['Properties']['Tags']))[0]['Value'])
+
+        for item in self.configuration['listeners']:
+            port = int(item['target_group']['container']['port'])
+            if container_port == port:
+                listener_container_name = 'default'
+                if 'name' in item['target_group']['container']:
+                    listener_container_name = item['target_group']['container']['name']
+                if listener_container_name.lower() == container_name.lower():
+                    return item
+        return None
+ 
+    def _find_host_port(self, container_name, container_port):
+        """ find the host port for the tupe container name / container port"""
+        cfn_container_definitions = self.infos.green_infos.stack['Resources']['TaskDefinition']['Properties']['ContainerDefinitions']
+        container_info =  next((x for x in cfn_container_definitions if x['Name'] == container_name), None)
+        return next((x for x in container_info['PortMappings'] if str(x['ContainerPort']) == str(container_port)), None)['HostPort']
+  
+    def _calculate_avalaible_priority_rule(self, listener_rule_infos):
+        """calculate avalaible priority rule"""
+        result = None
+        if 'priority' in listener_rule_infos.configuration['rule']:
+            result = int(listener_rule_infos.configuration['rule']['priority'])
+        client = boto3.client('elbv2', region_name = self.infos.region)
+        response = client.describe_rules( ListenerArn = listener_rule_infos.listener_arn)
+        priorities = []
+        for item in response['Rules']:
+            if self.is_int(item['Priority']):
+                priorities.append(item['Priority'])
+        
+        priorities = sorted(priorities)
+        # si il n'existe pas de priorité pour existance pour la pri
+        if result != None:
+            if result not in priorities:
+                return result
+            else:
+                if len(priorities) > 0:
+                    result = result + 1
+                    while True:
+                        if result not in priorities:
+                            listener_rule_infos.configuration['rule']['priority'] = result
+                            break
+        else:
+            # si la priorité n'es pas fournie
+            # on met la regle en queue de priorité si ell
+            if len(priorities)>0:
+                listener_rule_infos.configuration['rule']['priority'] = priorities[len(priorities)-1] + 1
+            else:
+                listener_rule_infos.configuration['rule']['priority'] = 1 
+
+        return listener_rule_infos.configuration['rule']['priority'] 

@@ -1,0 +1,212 @@
+import boto3
+
+from ecs_crd.canaryReleaseInfos import ReleaseInfos
+from ecs_crd.canaryReleaseInfos import LoadBalancerInfos
+from ecs_crd.canaryReleaseInfos import ListenerRuleInfos
+from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
+from ecs_crd.prepareDeploymentContainerDefinitionsStep import PrepareDeploymentContainerDefinitionsStep
+
+class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
+    
+    def __init__(self, infos, logger):
+        """initializes a new instance of the class"""
+        super().__init__(infos,'Prepare deployment ( Load Balancer parameters )', logger)
+
+    #----------------------------------------------------
+    #
+    #----------------------------------------------------
+    def _on_execute(self):
+        """operation containing the processing performed by this step"""
+        try:
+            self.logger.info('')
+            self.logger.info('Load balancers infos :')
+            self.logger.info(''.ljust(50, '-'))
+
+            # récupération de l'item dynamo si il existe
+            dynamodb_item = self._find_blue_dynamodb_item()
+            
+            # recherhcer de deux load balancers eligibles
+            albs = self._find_load_balancers(dynamodb_item)
+           
+            # si le blue alb n'existe plus, on le supprime
+            if dynamodb_item != None:
+                if len(list(filter(lambda x: x.arn == dynamodb_item['alb_arn'], albs))) == 0:
+                    self._delete_obsolete_item()
+                    dynamodb_item = None
+
+            if len(albs) < 2:
+                raise ValueError('There is not enough load balancer for a canary deployment.')
+            if len(albs) > 2:
+                raise ValueError('There are too many load balancers for a canary deployment.')
+
+            self.infos.init_infos.stack['Parameters']['LoadBalancerBlue']['Default'] = albs[0].dns_name
+            self.infos.init_infos.stack['Parameters']['LoadBalancerGreen']['Default'] = albs[1].dns_name
+            self.infos.init_infos.stack_name = f'{self.infos.environment}-{self.infos.service_name}-0'
+
+            exist = self._find_cloud_formation_stack(self.infos.init_infos.stack_name)
+            
+            if exist != None:
+                 self.infos.init_infos.stack_id = exist['StackId']
+                 self.infos.init_infos.stack = None
+    
+            # green infos
+            greens = list(filter(lambda x: x.is_elected, albs))
+            if len(greens) == 0:
+                raise ValueError(f'There is no ALB to deploy the Green release.')
+            green = greens[0]
+
+            self.infos.green_infos.stack['Parameters']['LoadBalancer']['Default'] = green.arn
+            self.infos.green_infos.stack['Parameters']['CanaryRelease']['Default'] = green.canary_release
+            self.infos.green_infos.alb_arn = green.arn
+            self.infos.green_infos.canary_release = green.canary_release
+            self.infos.green_infos.alb_dns = green.dns_name
+            self.infos.green_infos.alb_hosted_zone_id = green.hosted_zone_id
+            self.infos.green_infos.stack_name = f'{self.infos.environment}-{self.infos.service_name}-{green.canary_release}'    
+            exist = self._find_cloud_formation_stack(self.infos.green_infos.stack_name)
+            if exist:
+                raise ValueError(f'There is already a cloudformation stack named for the Green release : {self.infos.green_infos.stack_name}.') 
+
+            # blue infos
+            blues = list(filter(lambda x: x != green, albs))
+            blue = blues[0]
+            self.infos.blue_infos = ReleaseInfos()
+            self.infos.blue_infos.alb_arn = blue.arn
+            self.infos.blue_infos.alb_dns = blue.dns_name
+            self.infos.blue_infos.canary_release = blue.canary_release
+            self.infos.blue_infos.alb_hosted_zone_id = green.hosted_zone_id
+            if dynamodb_item != None:
+                exist_blue_deployment = self._find_cloud_formation_stack(dynamodb_item['stack_name'])
+                if exist_blue_deployment:
+                    self.infos.blue_infos.stack_id = exist_blue_deployment['StackId']
+                    self.infos.blue_infos.stack_name = f'{self.infos.environment}-{self.infos.service_name}-{blue.canary_release}'
+            
+            self.logger.info('  Elected Release    : {}'.format(self.infos.elected_release))
+            self.logger.info('')
+            self.logger.info('  ALB Blue ')
+            self.logger.info('      Dns    : {}'.format(blue.dns_name))
+            self.logger.info('      ARN    : {}'.format(blue.arn))
+            self.logger.info('')
+            self.logger.info('  ALB Green')
+            self.logger.info('      Dns    : {}'.format(green.dns_name))
+            self.logger.info('      Arn    : {}'.format(green.arn))          
+
+            # init stack
+            stack = self._find_cloud_formation_stack(self.infos.init_infos.stack_name)
+            if stack != None:
+                self.infos.init_infos.stack = None
+            self.infos.save()
+            return PrepareDeploymentContainerDefinitionsStep(self.infos, self.logger)
+
+        except Exception as e:
+            self.infos.exit_code = 1
+            self.infos.exit_exception = e
+            self.logger.error(self.title, exc_info=True)
+        else:
+            return None
+
+    #----------------------------------------------------
+    #
+    #----------------------------------------------------
+    def _find_cloud_formation_stack(self, stack_name):
+        client = boto3.client('cloudformation', region_name = self.infos.region)
+        response = client.list_stacks(StackStatusFilter = ['CREATE_COMPLETE'])
+        count = sum(1 for e in response['StackSummaries'] if e['StackName'] == stack_name)
+        if (count == 0):
+            return None
+        response = client.describe_stacks(StackName = stack_name)
+        if len(response['Stacks']) == 1:
+            return response['Stacks'][0]
+        else:
+            return None
+
+    #----------------------------------------------------
+    #
+    #----------------------------------------------------
+    def _find_load_balancers(self, dynamodb_item):
+
+        client = boto3.client('elbv2', region_name = self.infos.region)
+        response = client.describe_load_balancers()
+        albs = []
+        for item in response['LoadBalancers']:
+            if item['VpcId'] != self.infos.vpc_id:
+                continue
+            if item['Type'] != 'application':
+                continue
+            arn = item['LoadBalancerArn']
+            dnsName = item['DNSName']
+            canonicalHostedZoneId = item['CanonicalHostedZoneId']
+            canaryRelease = None
+            canaryGroup = None
+            # find tag informations
+            response = client.describe_tags(ResourceArns=[arn])
+            for tagDescriptions in response['TagDescriptions']:
+                for tag in tagDescriptions['Tags']:
+                    if tag['Key'] == 'CanaryRelease':
+                        canaryRelease = tag['Value']
+                    if tag['Key'] == 'CanaryGroup' and tag['Value'] == self.infos.canary_group:
+                        canaryGroup = self.infos.canary_group
+            
+            # aln is ready 
+            if canaryRelease != None and canaryGroup !=None:
+                albs.append(LoadBalancerInfos(arn, dnsName , canaryRelease, canonicalHostedZoneId))
+       
+        # no alb found to deploy
+        if (len(albs) == 0):
+            raise ValueError(f'There are no tagged ALBs ("{self.infos.environment}") allowing the service to be deployed.')
+
+        blue_alb_arn = None
+        if dynamodb_item != None:
+            blue_alb_arn = dynamodb_item['alb_arn']
+    
+        elected_alb = None
+
+        # rechecher de l'alb green
+        for alb in albs:
+            if alb.arn != blue_alb_arn:
+                alb.is_elected = True
+                elected_alb = alb
+                response = client.describe_listeners(LoadBalancerArn = alb.arn)
+                for item in self.configuration['listeners']:
+                    # rechercher de l'écouteur associé au port 
+                    listeners = list(filter(lambda x: x['Port'] == int(item['port']),response['Listeners']))
+                     # le port est déjà écouté sur le 'load balancer' , on doit créer un 'listener rule'
+                    if len(listeners) == 1:
+                        listener = listeners[0]
+                        # on vérifie qu'il y a une règle pour le
+                        if 'rule' not in item:
+                            container_name = 'default'
+                            if 'container' in item['target_group']:
+                                container_name =  item['target_group']['container']['name']
+                            raise ValueError('Rule is mandatory for listener port:{}, target_group.port:{}, container_name:{}'.format(item['port'], item['target_group']['port'],  container_name))
+                        rule_infos = ListenerRuleInfos(listener['ListenerArn'],item)
+                        self.infos.listener_rules_infos.append(rule_infos)
+                break
+
+        if elected_alb == None:
+            raise ValueError('Not Load balencer found for deploy.')
+        self.infos.elected_release = 'blue' if str(elected_alb.canary_release) == str(self.configuration['canary']['releases']['blue']) else 'green'
+        return albs
+
+    #-----------------------------------
+    # delete dynamodb Item if obsolete
+    #-----------------------------------
+    def _delete_obsolete_item(self):
+        client = boto3.resource('dynamodb', region_name = self.infos.region)
+        table = client.Table('canary_release')
+        table.delete_item(
+            Key = {
+                'id' : self.infos.get_hash()
+            }
+        )
+
+    def _find_blue_dynamodb_item(self):
+        client = boto3.resource('dynamodb', region_name = self.infos.region)
+        table = client.Table('canary_release')
+        response = table.get_item(
+            Key = {
+                'id' : self.infos.get_hash()
+            }
+        )
+        if 'Item' in response:
+            return response['Item']
+        return None

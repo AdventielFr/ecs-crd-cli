@@ -1,0 +1,3 @@
+include requirements.txt
+include ecs_crd/*.json
+include _doc/*
