@@ -15,22 +15,23 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
     def _process_account_id(self):
         """update the AWS account ID informations for the service"""
         self.infos.account_id = boto3.client('sts').get_caller_identity().get('Account')
-        self.logger.info(f' Account id    : {self.infos.account_id}')
+        self._log_information(key = 'Account ID', value = self.infos.account_id, ljust=18)
 
     def _process_canary_group(self):
         """update the canary group name informations for the service"""
         self.infos.canary_group = self.configuration['canary']['group']
-        self.logger.info(f' Canary group : {self.infos.canary_group}')
+        self._log_information(key = 'Canary group', value = self.infos.canary_group, ljust=18)
 
     def _process_external_ip(self):
         """update the external ip informations for the service"""
         self.infos.external_ip = self._find_external_ip()
-        self.logger.info(f' External IP  : {self.infos.external_ip}')
+        self._log_information(key = 'External IP', value = self.infos.external_ip, ljust=18)
+       
 
     def _process_project(self):
         """update the project name informations for the service"""
         self.infos.project = self.configuration['service']['project']
-        self.logger.info(f' Project  : {self.infos.project}')
+        self._log_information(key = 'Project', value = self.infos.project, ljust=18)
         self.infos.green_infos.stack['Parameters']['ProjectName']['Default'] = self.infos.project
         self.infos.init_infos.stack['Parameters']['ProjectName']['Default'] = self.infos.project
 
@@ -39,7 +40,7 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
         self.infos.service_name = self.bind_data(self.configuration['service']['name'])
         self.infos.green_infos.stack['Parameters']['ServiceName']['Default'] = self.infos.service_name
         self.infos.init_infos.stack['Parameters']['ServiceName']['Default'] = self.infos.service_name
-        self.logger.info(f' Service  : {self.infos.service_name}')
+        self._log_information(key = 'Service', value = self.infos.service_name, ljust=18)
     
     def _process_version(self):
         """update the version informations for the service"""
@@ -48,29 +49,31 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
             version = str(self.configuration['service']['version'])
         self.infos.service_version = version
         self.infos.green_infos.stack['Parameters']['Version']['Default'] = self.infos.service_version
-        self.logger.info(f' Version  : {self.infos.service_version}')
+        self._log_information(key = 'Version', value = self.infos.service_version, ljust=18)
 
     def _process_fqdn(self):
         """update the fqdn informations for the service"""
         fqdn = self.bind_data(self.configuration['service']['fqdn'])
         self.infos.fqdn = fqdn
-        self.logger.info(f' Fqdn : {self.infos.fqdn}')
         self.infos.init_infos.stack['Parameters']['Fqdn']['Default'] = fqdn
+        self._log_information(key = 'Fqdn', value = self.infos.fqdn, ljust=18)
 
     def _process_hosted_zone_name(self):
         """update the AWS route53 hosted zone informations for the service"""
         data = self.infos.fqdn.split('.')
         hostZoneName = data[len(data)-2] + '.' + data[len(data)-1] + '.'
         self.infos.init_infos.stack['Parameters']['HostedZoneName']['Default'] = hostZoneName
-        self.logger.info(f' Dns zone : {hostZoneName}')
+        self._log_information(key = 'Dns zone', value = hostZoneName, ljust=18)
         hostedZone = self._find_hosted_zone(hostZoneName)
         if hostedZone == None:
             raise ValueError(f'HostedZone {hostZoneName} not found, create Route53 Zone before deploy')
         self.infos.hosted_zone_id = hostedZone['Id'].split('/')[2]
+        self._log_information(key = 'Dns zone ID', value = self.infos.hosted_zone_id, ljust=18)
 
     def _process_vpc_id(self):
         """update the AWS vpc ID informations for the service"""
         self.infos.vpc_id = self._find_vpc_Id()
+        self._log_information(key = 'Vpc ID', value = self.infos.vpc_id, ljust=18)
     
     def _process_cluster(self):
         """update the AWS ECS cluster informations for the service"""
@@ -79,7 +82,7 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
         if 'cluster' in self.configuration['service']:
             clusterName = self.bind_data(self.configuration['service']['cluster'])
         self.infos.cluster_name = clusterName
-        self.logger.info(f' Cluster  : {self.infos.cluster_name}')
+        self._log_information(key = 'Cluster', value = self.infos.cluster_name, ljust=18)
         self.infos.green_infos.stack['Parameters']['ClusterName']['Default'] = clusterName
         self.infos.init_infos.stack['Parameters']['ClusterName']['Default'] = clusterName
 
@@ -87,16 +90,13 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
         cluster = self._find_cluster(clusterName)
         self.infos.cluster = cluster
         self.infos.green_infos.stack['Parameters']['Cluster']['Default'] = cluster
+        self._log_information(key = 'Cluster ID', value = self.infos.cluster, ljust=18)
 
     def _on_execute(self):
         """operation containing the processing performed by this step"""
         try:
-        
-            self.logger.info('')
-            self.logger.info('Global infos :')
-            self.logger.info(''.ljust(50, '-'))
-            self.logger.info(f' Deploy id    : {self.infos.id}')
-        
+
+            self._log_information(key='Deploy ID', value= self.infos.id, ljust=18)
             self._process_account_id()
             self._process_canary_group()
             self._process_external_ip()

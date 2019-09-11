@@ -12,10 +12,6 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
     def _on_execute(self):
         """operation containing the processing performed by this step"""
         try:
-            self.logger.info('')
-            self.logger.info('Listener infos :')
-            self.logger.info(''.ljust(50, '-'))
-
             cfn = self.infos.green_infos.stack['Resources']['Service']['Properties']['LoadBalancers']
             for item in cfn:
                 target_group = self.infos.green_infos.stack['Resources'][item['TargetGroupArn']['Ref']]
@@ -54,40 +50,38 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
             if item.configuration == listener_infos:
                 return item
 
+    def _convert_2_condition_generic(self, item, condition, name):
+        condition[name] = {}
+        self._log_information(key=name, value= '',indent=4)
+        self._log_information(key='Values', value= '',indent=5)
+        condition[name]['Values'] = []
+        for elmt in item['values']:
+            data = self.bind_data(elmt)
+            self._log_information(key='- '+data, value = None, indent=6)
+            condition[name]['Values'].append(data)
+
     def _convert_2_condition(self,item):
         condition = {}
         condition['Field'] = item['field'].lower()
+        self._log_information(key='- Field', value=condition['Field'] ,indent=2)
         
         if condition['Field'] == 'host-header':
-            condition['HostHeaderConfig'] = {}
-            condition['HostHeaderConfig']['Values'] = []
-            for elmt in item['values']:
-                condition['HostHeaderConfig']['Values'].append(self.bind_data(elmt))
-
+            self._convert_2_condition_generic(item, condition,'HostHeaderConfig')      
+        
         if condition['Field'] == 'http-header':
-            condition['HttpHeaderConfig'] = {}
-            condition['HttpHeaderConfig']['HttpHeaderName'] = item['name']
-            condition['HttpHeaderConfig']['Values'] = []
-            for elmt in item['values']:
-                condition['HttpHeaderConfig']['Values'].append(self.bind_data(elmt))
+            self._convert_2_condition_generic(item, condition,'HttpHeaderConfig')
+            data = self.bind_data(item['name'])
+            condition['HttpHeaderConfig']['HttpHeaderName'] = data
+            self._log_information(key='Name', value = data, indent=5)
 
         if condition['Field'] == 'http-request-method':
-            condition['HttpRequestMethodConfig'] = {}
-            condition['HttpRequestMethodConfig']['Values'] = []
-            for elmt in item['values']:
-                condition['HttpRequestMethodConfig']['Values'].append(self.bind_data(elmt))
-            
+            self._convert_2_condition_generic(item, condition,'HttpRequestMethodConfig')
+
         if condition['Field'] == 'path-pattern':
-            condition['PathPatternConfig'] = {}
-            condition['PathPatternConfig']['Values'] = []
-            for elmt in item['values']:
-                condition['PathPatternConfig']['Values'].append(self.bind_data(elmt))
+            self._convert_2_condition_generic(item, condition,'PathPatternConfig')
 
         if condition['Field'] == 'source-ip':
-            condition['SourceIpConfig'] = {}
-            condition['SourceIpConfig']['Values'] = []
-            for elmt in item['values']:
-                condition['SourceIpConfig']['Values'].append(self.bind_data(elmt))
+            self._convert_2_condition_generic(item, condition,'SourceIpConfig')
 
         return condition       
    
@@ -99,6 +93,8 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
         listener_rule['Properties']['Priority'] = self._calculate_avalaible_priority_rule(listener_rule_infos)
         listener_rule['Properties']['ListenerArn'] = listener_rule_infos.listener_arn
         
+        self._log_sub_title(f'Container "{container_name}:{container_port}"')
+
         # Actions
         listener_rule['Properties']['Actions'] = []
         action = {}
@@ -107,32 +103,32 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
         action['TargetGroupArn']['Ref'] = item['TargetGroupArn']['Ref']
         listener_rule['Properties']['Actions'].append(action)
 
+        host_port = str(self._find_host_port(container_name, container_port))
+        host_port = '(dynamic)' if host_port =='0' else host_port
+        self._log_information(key="Port",value=listener_infos['port'],indent=1)
+
+        self._log_information(key="Rules", value='', indent=1)
         # Conditions
         listener_rule['Properties']['Conditions'] = []
-        self.logger.info('')
-        self.logger.info('  Listener Rule infos:')
         for condition in listener_rule_infos.configuration['rule']['conditions']:
             listener_rule['Properties']['Conditions'].append(self._convert_2_condition(condition))
-            host_port = str(self._find_host_port(container_name, container_port))
-            host_port = '(dynamic)' if host_port =='0' else host_port
-            self.logger.info('      [Rule]:{} -> [listener]:{} -> [target group]:{} -> [host]:{} -> [container] {}:{}'.format(listener_rule['Properties']['Priority'], listener_rule_infos.configuration['port'], target_group['Properties']['Port'], host_port, container_name, container_port))
         
         self.infos.green_infos.stack['Resources'][item['TargetGroupArn']['Ref'].replace('TargetGroup','ListenerRule')] = listener_rule
         
         # certificates
         certificates = self._find_certificates(listener_infos)
         if len(certificates) > 0:
-            self.logger.info('')
-            self.logger.info('  Listener Certificate infos:')
+            self._log_sub_title('Certificates')
             listener_certificate = {}
             listener_certificate['Type']='AWS::ElasticLoadBalancingV2::ListenerCertificate'
             listener_certificate['Properties'] = {}
             listener_certificate['Properties']['Certificates'] = []
             for cert in certificates:
                 certificate = {}
-                certificate['CertificateArn'] = cert
+                certificate['CertificateArn'] = cert['CertificateArn']
                 listener_certificate['Properties']['Certificates'].append(certificate)
-                self.logger.info('      Certificate Arn:{}'.format(cert))
+                self._log_information(key='- DomainName', value= cert['DomainName'], indent=1)
+                self._log_information(key='  ARN', value= cert['CertificateArn'], indent=1)
             listener_certificate['Properties']['ListenerArn'] = listener_rule_infos.listener_arn
             self.infos.green_infos.stack['Resources']['ListenerCertificate'] = listener_certificate
 
@@ -144,6 +140,9 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
         listener['Type'] = "AWS::ElasticLoadBalancingV2::Listener"
         listener['Properties'] = {}
         listener['Properties']['Port'] = listener_infos['port']
+
+        self._log_sub_title(f'Container "{container_name}:{container_port}"')
+
         if 'protocol' in listener_infos:
             listener['Properties']['Protocol'] = listener_infos['protocol'].upper()
         else:
@@ -154,7 +153,7 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
             listener['Properties']['Certificates']=[]
             for cert in self._find_certificates(listener_infos):
                 certificate = {}
-                certificate['CertificateArn'] = cert
+                certificate['CertificateArn'] = cert['CertificateArn']
                 listener['Properties']['Certificates'].append(certificate)
     
         listener['Properties']['LoadBalancerArn'] = {}
@@ -169,7 +168,7 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
         
         host_port = str(self._find_host_port(container_name, container_port))
         host_port = '(dynamic)' if host_port =='0' else host_port
-        self.logger.info(' [listener]:{} -> [target group]:{} -> [host]:{} -> [container] {}:{}'.format(listener_infos['port'], target_group['Properties']['Port'], host_port, container_name, container_port))
+        self._log_information(key="Port",value=listener_infos['port'],indent=1)
         cfn_resource_listener_name = item['TargetGroupArn']['Ref'].replace('TargetGroup','Listener')
         self.infos.green_infos.stack['Resources'][cfn_resource_listener_name] = listener
 
@@ -182,7 +181,7 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
             for cert in response['CertificateSummaryList']:
                 for certificate in listener_infos['certificates']:
                     if cert['DomainName'] == self.bind_data(certificate):
-                        result.append(cert['CertificateArn'])
+                        result.append(cert)
         return result
 
     def _exist_listener(self, listener_infos):

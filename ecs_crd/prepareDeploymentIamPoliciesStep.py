@@ -42,14 +42,14 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
         cfn_policy_item['Action'] = policy_info.action
         cfn_policy_item['Resource'] = policy_info.resource
         cfn_policy['PolicyDocument']['Statement'].append(cfn_policy_item)
-        self.logger.info(f'  Policy "{policy_info.name}"')
-        self.logger.info(f'     Effect : {policy_info.effect}')
-        self.logger.info(f'     Action : ')
+        self._log_information(key='Sid', value=policy_info.name, indent=1)
+        self._log_information(key='Effect', value=policy_info.effect, indent=2)
+        self._log_information(key='Action', value='', indent=2)
         for a in policy_info.action:
-            self.logger.info(f'         {a}')
-        self.logger.info(f'     Resource : ')
+            self._log_information(key='- '+a, value=None, indent=3)
+        self._log_information(key='Resource', value='', indent=2)
         for a in policy_info.resource:
-            self.logger.info(f'         {a}')
+            self._log_information(key='- '+a, value=None, indent=3)
         self.logger.info('')
         return cfn_policy
 
@@ -57,16 +57,15 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
         """update the role for the ECS task service"""
         policies = self._find_all_dto_policies()
         if len(policies)>0:
-            cfn_policies = []
-            self.logger.info('')
-            self.logger.info(' Task role policy infos :')
-            self.logger.info('')
-            for policy in policies:
-                cfn_policies.append(self._policy_info_2_cloud_formation_policy(policy))
             role = {}
             role['Type'] = 'AWS::IAM::Role'
             role['Properties'] = {}
             role['Properties']['RoleName'] = f'{self.infos.environment}-{self.infos.service_name}-{self.infos.green_infos.canary_release}-ecs-task-role'
+            self._log_sub_title('IAM Service role "{}"'.format(role['Properties']['RoleName']))
+            cfn_policies = []
+            for policy in policies:
+                cfn_policies.append(self._policy_info_2_cloud_formation_policy(policy))
+            
             role['Properties']['Policies'] = cfn_policies
             role['Properties']['AssumeRolePolicyDocument'] = {}
             role['Properties']['AssumeRolePolicyDocument']['Version'] = '2012-10-17'
@@ -82,13 +81,13 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
             self.infos.green_infos.stack['Resources']['TaskRole'] = role
             self.infos.green_infos.stack['Resources']['TaskDefinition']['Properties']['TaskRoleArn'] = {}
             self.infos.green_infos.stack['Resources']['TaskDefinition']['Properties']['TaskRoleArn']['Ref'] = 'TaskRole'
+            
+            
     
     def _process_task_execution_role(self):
         """update the role for ECS task execution"""
         if self.infos.secret_infos != None:
-            self.logger.info('')
-            self.logger.info(' Task execution role policy infos :')
-            self.logger.info('')
+            self._log_sub_title('IAM Task Execution policy')
             cfn_policies = []
             effect = 'Allow'
             action = ['kms:Decrypt','secretsmanager:GetSecretValue']

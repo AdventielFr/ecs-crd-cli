@@ -23,18 +23,28 @@ class CanaryReleaseDeployStep(ABC):
         return result
 
     def _log_start(self):
-        self.logger.info('')
         self.logger.info(''.ljust(50, '-'))
         self.logger.info(f'Step: {self.title}')
         self.logger.info(''.ljust(50, '-'))
+
+    def _log_sub_title(self, sub_title):
+        self.logger.info('')
+        self.logger.info(sub_title)
+        self.logger.info(''.ljust(50, '-'))
+    
+    def _log_information(self, key, value, ljust = None, indent=0):
+        if ljust == None:
+            ljust = len(key)
+        data = "{}{} {} {}".format(''.ljust(indent),key.ljust(ljust), ':' if value != None else '', '' if value == None else value)
+        self.logger.info(data)
     
     def _log_end(self):
         self.logger.info('')
         result = 'COMPLETED'
         if self.infos.exit_code != 0 and self.previous_exit_code == 0:
             result = 'FAILED'
-
-        self.logger.info(f'{self.title} : {result}')
+        self.logger.info(f'Step Result : {result}')
+        self.logger.info('')
 
     #----------------------------------------------------
     #

@@ -49,7 +49,7 @@ class DestroyInitStackStep(CanaryReleaseDeployStep):
             for i in response['StackResourceSummaries']:
                 self.logger.info('  '+i['LogicalResourceId'].ljust(40,'.')+i['ResourceStatus'])
                 if i['ResourceStatus'] == 'DELETE_FAILED':
-                    raise ValueError(f"Error delete cloudformation stack : {i['ResourceStatusReason']}")
+                    raise ValueError(f"Error delete cloudformation stack : {i}")
                 if i['ResourceStatus'] == 'DELETE_IN_PROGRESS':
                     delete = False
             if delete:

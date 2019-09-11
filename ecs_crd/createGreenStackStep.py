@@ -44,7 +44,7 @@ class CreateGreenStackStep(CanaryReleaseDeployStep):
             for i in response['StackResourceSummaries']:
                 self.logger.info('  '+i['LogicalResourceId'].ljust(40,'.')+i['ResourceStatus'])
                 if i['ResourceStatus'] not in valid_states:
-                    raise ValueError(f"Error creation cloudformation stack : {i['ResourceStatusReason']}")
+                    raise ValueError(f"Error creation cloudformation stack : {i}")
                 if i['ResourceStatus'] == 'CREATE_IN_PROGRESS':
                     created = False
             if created:

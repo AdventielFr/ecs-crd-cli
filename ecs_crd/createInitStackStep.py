@@ -79,7 +79,7 @@ class CreateInitStackStep(CanaryReleaseDeployStep):
                     40, '.')+i['ResourceStatus'])
                 if i['ResourceStatus'] not in valid_states:
                     raise ValueError(
-                        f"Error creation cloudformation stack : {i['ResourceStatusReason']}")
+                        f"Error creation cloudformation stack : {i}")
                 if i['ResourceStatus'] != 'CREATE_COMPLETE':
                     created = False
             if created:

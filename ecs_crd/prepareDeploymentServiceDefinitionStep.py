@@ -10,44 +10,45 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
 
     def _process_scheduling_strategy(self):
         """update the sceduling stratégy informations for the service"""
+        self.infos.green_infos.stack['Resources']['Service']['Properties']['SchedulingStrategy'] = 'REPLICA'
         if 'scheduling_strategy' in self.configuration['service']:
             if self.configuration['service']['scheduling_strategy'].upper() == 'DAEMON':
                 self.infos.green_infos.stack['Resources']['Service']['Properties']['SchedulingStrategy'] = 'DAEMON'
-            else:
-                self.infos.green_infos.stack['Resources']['Service']['Properties']['SchedulingStrategy'] = 'REPLICA'
-            self.logger.info( ' Scheduling Strategy: {}'.format(self.infos.green_infos.stack['Resources']['Service']['SchedulingStrategy']))
-
+        self._log_information(key='Scheduling Strategy',value=self.infos.green_infos.stack['Resources']['Service']['Properties']['SchedulingStrategy'],ljust=10, indent=1)
+   
     def _process_platform_version(self):
         """update the plaform version informations for the service"""
         if 'platform_version' in self.configuration['service']:
             self.infos.green_infos.stack['Resources']['Service']['Properties']['PlatformVersion'] = self.configuration['service']['platform_version']
-            self.logger.info( ' Platform Version: {}'.format(self.infos.green_infos.stack['Resources']['Service']['Properties']['PlatformVersion']))
+            self._log_information(key='Platform Version',value=self.infos.green_infos.stack['Resources']['Service']['Properties']['PlatformVersion'],ljust=10, indent=1)
 
     def _process_placement_constraints(self):
         """update the placement constraintes informations for the service"""
         if 'placement_constraints' in self.configuration['service']:
-            self.logger.info(' Placement Constraints infos:')
+            self._log_information(key='Placement Contraints',value='',ljust=10, indent=1)
             self.infos.green_infos.stack['Resources']['Service']['Properties']['PlacementConstraints'] = []
             for item in self.configuration['service']['placement_constraints']:
                 constraint = {}
                 constraint['Expression'] = item['expression']
-                constraint['Type'] = item['type']
-                self.logger.info('  Expression: {}'.format(item['expression']))
-                self.logger.info('  Type: {}'.format(item['type']))
+                constraint['Type'] = "memberOf"
+                if 'type' in item:
+                    constraint['Type'] = item['type']
                 self.infos.green_infos.stack['Resources']['Service']['Properties']['PlacementConstraints'].append(constraint)
+                self._log_information(key='- Expression',value=constraint['Expression'],ljust=10, indent=2)
+                self._log_information(key='  Type',value=constraint['Type'],ljust=10, indent=2)
 
     def _process_placement_stategies(self):
         """update the placement strategies informations for the service"""
         if 'placement_stategies' in self.configuration['service']:
-            self.logger.info(' Placement Strategies infos:')
+            self._log_information(key='Placement Strategies',value='',ljust=10, indent=1)
             self.infos.green_infos.stack['Resources']['Service']['Properties']['PlacementStrategies'] = []
             for item in self.configuration['service']['placement_stategies']:
                 strategy = {}
                 strategy['Field'] = item['field']
                 strategy['Type'] = item['type']
-                self.logger.info('  Field: {}'.format(item['field']))
-                self.logger.info('  Type: {}'.format(item['type']))
                 self.infos.green_infos.stack['Resources']['Service']['Properties']['PlacementStrategies'].append(strategy)
+                self._log_information(key='- Field',value=strategy['Field'],ljust=10, indent=2)
+                self._log_information(key='  Type',value=strategy['Type'],ljust=10, indent=2)
 
     def _process_load_balancer(self):
         cfn = self.infos.green_infos.stack['Resources']['Service']['Properties']['LoadBalancers']
@@ -69,9 +70,6 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
     def _on_execute(self):
         """operation containing the processing performed by this step"""
         try:
-            self.logger.info('')
-            self.logger.info('Service infos :')
-            self.logger.info(''.ljust(50, '-'))
             self._process_scheduling_strategy()
             self._process_platform_version()
             self._process_placement_constraints()

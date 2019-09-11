@@ -11,35 +11,25 @@ class PrepareDeploymentTaskDefinitionStep(CanaryReleaseDeployStep):
     def _process_cpu(self, item, cfn):
         if 'cpu' in item:
             cfn['Cpu'] = int(item['cpu'])
-            self.logger.info(f' Cpu : {cfn["Cpu"]}')
+            self._log_information(key='Cpu',value=cfn["Cpu"],ljust=10, indent=1)
 
     def _process_memory(self, item, cfn):
         if 'memory' in item:
             cfn['Memory'] = int(item['memory'])
-            self.logger.info(f' Memory :  {cfn["Memory"]}')
+            self._log_information(key='Memory',value=cfn["Memory"],ljust=10, indent=1)
 
     def _process_network_mode(self, item, cfn):
         if 'network_mode' in item:
             cfn['NetworkMode'] = item['network_mode']
-            self.logger.info(f' NetworkMode:  {cfn["NetworkMode"]}')
+            self._log_information(key='NetworkMode',value=cfn["NetworkMode"],ljust=10, indent=1)
 
     def _process_requires_compatibilities(self, item, cfn):
         if 'requires_compatibilities' in item:
-            cfn['RequiresCompatibilities'] = item['requires_compatibilities']
-            self.logger.info(f' NetworkMode :  {cfn["RequiresCompatibilities"]}')
-
-    def _process_volume(self, item, cfn):
-        if 'volumes' in item:
-            self.logger.info(f' Volumnes :')
-            cfn['Volumes'] = []
-            for e in item['volumes']:
-                volume = {}
-                volume['Host'] = {}
-                volume['Host']['SourcePath'] = e['host']
-                volume['Name'] = e['name']
-                cfn['Volumes'].append(volume)
-                self.logger.info('     SourcePath: {}'.format( volume['Host']['SourcePath'] ))
-                self.logger.info('     Name: {}'.format(volume['Name']))
+            self._log_information(key='Requires Compatibilities',value='',ljust=10, indent=1)
+            cfn['RequiresCompatibilities'] =[]
+            for e in item['requires_compatibilities']:
+                cfn['RequiresCompatibilities'].append(e)
+                self._log_information(key='- '+e, value=None,ljust=10, indent=1)
 
     #----------------------------------------------------
     #
@@ -47,16 +37,12 @@ class PrepareDeploymentTaskDefinitionStep(CanaryReleaseDeployStep):
     def _on_execute(self):
         """operation containing the processing performed by this step"""
         try:
-            self.logger.info('')
-            self.logger.info('Task definition infos :')
-            self.logger.info(''.ljust(50, '-'))
-            cfn = self.infos.green_infos.stack['Resources']['TaskDefinition']
+            cfn = self.infos.green_infos.stack['Resources']['TaskDefinition']['Properties']
             item = self.configuration['service']
             self._process_cpu(item, cfn)
             self._process_memory(item, cfn)
             self._process_network_mode(item, cfn)
             self._process_requires_compatibilities(item, cfn)
-            self._process_volume(item, cfn)
             self.infos.save()
             return PrepareDeploymentTargetGroupsStep(self.infos, self.logger)         
 

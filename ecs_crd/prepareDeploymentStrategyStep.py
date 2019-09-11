@@ -35,21 +35,13 @@ class PrepareDeploymentStrategyStep(CanaryReleaseDeployStep):
         self.infos.strategy_infos.append(StrategyInfos(100,self.default_wait))
         self.infos.strategy_infos = sorted( self.infos.strategy_infos, key=lambda strategy: strategy.weight)        
         
-        count = 1
         for a in self.infos.strategy_infos:
-            self.logger.info('')
-            self.logger.info(f'  Strategy Item {count}')
-            self.logger.info(f'     Weight: {a.weight}%')
-            self.logger.info(f'     Wait: {a.wait}s', )
-            count += 1
+            self._log_information(key='- Weight',value=a.weight,indent=1)
+            self._log_information(key='  Wait',value='{}s'.format(a.wait),indent=1)
    
     def _on_execute(self):
         """operation containing the processing performed by this step"""
         try:
-            self.logger.info('')
-            self.logger.info('Strategy infos :')
-            self.logger.info(''.ljust(50, '-'))
-            self.infos.save()
             self._process_strategy()
             return CreateInitStackStep(self.infos, self.logger)
         

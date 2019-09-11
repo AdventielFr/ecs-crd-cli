@@ -43,9 +43,9 @@ class Parameters:
         self.logger.info(''.ljust(50, '-'))
         self.logger.info(f'Step : Check parameters')
         self.logger.info(''.ljust(50, '-'))
-        self.logger.info(f'  Region             : {self.region}')
-        self.logger.info(f'  Environment        : {self.environment}')
-        self.logger.info(f'  Configuration      : {self.configuration_file}')
+        self.logger.info(f'Region             : {self.region}')
+        self.logger.info(f'Environment        : {self.environment}')
+        self.logger.info(f'Configuration      : {self.configuration_file}')
         self.logger.info('') 
         self.logger.info(f'Check parameters : COMPLETED')
 
@@ -112,7 +112,9 @@ def _create_logger(verbose):
     if level == logging.DEBUG:
         boto3.set_stream_logger(name='boto3', level=logging.DEBUG)
         boto3.set_stream_logger(name='botocore', level=logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter('%(asctime)s : %(name)s : %(levelname)s :  %(message)s')
+    else:
+        formatter= logging.Formatter('%(name)s : %(message)s')
     ch = logging.StreamHandler()
     ch.setFormatter(formatter)
     logger.addHandler(ch)

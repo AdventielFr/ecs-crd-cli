@@ -18,9 +18,6 @@ class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
     def _on_execute(self):
         """operation containing the processing performed by this step"""
         try:
-            self.logger.info('')
-            self.logger.info('Load balancers infos :')
-            self.logger.info(''.ljust(50, '-'))
 
             # récupération de l'item dynamo si il existe
             dynamodb_item = self._find_blue_dynamodb_item()
@@ -80,16 +77,14 @@ class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
                     self.infos.blue_infos.stack_id = exist_blue_deployment['StackId']
                     self.infos.blue_infos.stack_name = f'{self.infos.environment}-{self.infos.service_name}-{blue.canary_release}'
             
-            self.logger.info('  Elected Release    : {}'.format(self.infos.elected_release))
-            self.logger.info('')
-            self.logger.info('  ALB Blue ')
-            self.logger.info('      Dns    : {}'.format(blue.dns_name))
-            self.logger.info('      ARN    : {}'.format(blue.arn))
-            self.logger.info('')
-            self.logger.info('  ALB Green')
-            self.logger.info('      Dns    : {}'.format(green.dns_name))
-            self.logger.info('      Arn    : {}'.format(green.arn))          
+            self._log_sub_title('Load balancer "blue" {}'.format('(elected)' if self.infos.elected_release=='blue' else '' ))
+            self._log_information(key='Fqdn',value= blue.dns_name, indent=1, ljust=4)
+            self._log_information(key='ARN',value= blue.arn, indent=1, ljust=4)
 
+            self._log_sub_title('Load balancer "green" {}'.format('(elected)' if self.infos.elected_release=='green' else '' ))
+            self._log_information(key='Fqdn',value= green.dns_name, indent=1, ljust=4)
+            self._log_information(key='Dns',value= green.arn, indent=1, ljust=4)
+         
             # init stack
             stack = self._find_cloud_formation_stack(self.infos.init_infos.stack_name)
             if stack != None:

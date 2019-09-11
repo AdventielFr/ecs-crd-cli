@@ -28,11 +28,8 @@ class PrepareDeploymentScaleParametersStep(CanaryReleaseDeployStep):
                 wait = self.min_wait
             self.infos.scale_infos = ScaleInfos(desired, wait)
             
-            self.logger.info('')
-            self.logger.info('Scale infos :')
-            self.logger.info(''.ljust(50, '-'))
-            self.logger.info(f' Desired  Instances : {desired}')
-            self.logger.info(f' Wait     : {wait}s')
+            self._log_information(key='Desired  Instances', value=desired , ljust=18)
+            self._log_information(key='Wait', value=f'{wait}s' , ljust=18)
             self.infos.save()
             
             return PrepareDeploymentLoadBalancerParametersStep(self.infos, self.logger)
