@@ -1,2 +1,2 @@
 import os
-__version__ = '0.1.1a'
+__version__ = '0.1.1'

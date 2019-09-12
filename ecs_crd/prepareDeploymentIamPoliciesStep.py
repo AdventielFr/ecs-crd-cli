@@ -42,6 +42,7 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
         cfn_policy_item['Action'] = policy_info.action
         cfn_policy_item['Resource'] = policy_info.resource
         cfn_policy['PolicyDocument']['Statement'].append(cfn_policy_item)
+        self.logger.info('')
         self._log_information(key='Sid', value=policy_info.name, indent=1)
         self._log_information(key='Effect', value=policy_info.effect, indent=2)
         self._log_information(key='Action', value='', indent=2)
@@ -50,18 +51,19 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
         self._log_information(key='Resource', value='', indent=2)
         for a in policy_info.resource:
             self._log_information(key='- '+a, value=None, indent=3)
-        self.logger.info('')
         return cfn_policy
 
     def _process_task_role(self):
         """update the role for the ECS task service"""
         policies = self._find_all_dto_policies()
         if len(policies)>0:
+            self._log_sub_title('Task Definition Role')
+            self.logger.info('')
             role = {}
             role['Type'] = 'AWS::IAM::Role'
             role['Properties'] = {}
-            sole['Properties']['RoleName'] =  self._generate_name(suffix='-ecs-task', canary_group=self.infos.canary_group)
-            self._log_sub_title('IAM Service role "{}"'.format(role['Properties']['RoleName']))
+            role['Properties']['RoleName'] =  self._generate_name(suffix='-ecs-task', canary_release = self.infos.green_infos.canary_release)
+            self._log_information(key='Name',value=role['Properties']['RoleName'])
             cfn_policies = []
             for policy in policies:
                 cfn_policies.append(self._policy_info_2_cloud_formation_policy(policy))
@@ -84,9 +86,12 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
     
     def _process_task_execution_role(self):
         """update the role for ECS task execution"""
+        self.logger.info('')
+        self._log_sub_title('Task Definition Execution Role')
+        self.logger.info('')
         self.infos.green_infos.stack['Resources']['TaskExecutionRole']['Properties']['RoleName'] = self._generate_name(suffix='-ecs-exec-task', canary_release = self.infos.green_infos.canary_release)
+        self._log_information(key='Name',value=self.infos.green_infos.stack['Resources']['TaskExecutionRole']['Properties']['RoleName'])
         if self.infos.secret_infos != None:
-            self._log_sub_title('IAM Task Execution policy')
             cfn_policies = []
             effect = 'Allow'
             action = ['kms:Decrypt','secretsmanager:GetSecretValue']
