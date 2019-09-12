@@ -60,7 +60,7 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
             role = {}
             role['Type'] = 'AWS::IAM::Role'
             role['Properties'] = {}
-            role['Properties']['RoleName'] = f'{self.infos.environment}-{self.infos.service_name}-{self.infos.green_infos.canary_release}-ecs-task-role'
+            sole['Properties']['RoleName'] =  self._generate_name(suffix='-ecs-task', canary_group=self.infos.canary_group)
             self._log_sub_title('IAM Service role "{}"'.format(role['Properties']['RoleName']))
             cfn_policies = []
             for policy in policies:
@@ -81,11 +81,10 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
             self.infos.green_infos.stack['Resources']['TaskRole'] = role
             self.infos.green_infos.stack['Resources']['TaskDefinition']['Properties']['TaskRoleArn'] = {}
             self.infos.green_infos.stack['Resources']['TaskDefinition']['Properties']['TaskRoleArn']['Ref'] = 'TaskRole'
-            
-            
     
     def _process_task_execution_role(self):
         """update the role for ECS task execution"""
+        self.infos.green_infos.stack['Resources']['TaskExecutionRole']['Properties']['RoleName'] = self._generate_name(suffix='-ecs-exec-task', canary_release = self.infos.green_infos.canary_release)
         if self.infos.secret_infos != None:
             self._log_sub_title('IAM Task Execution policy')
             cfn_policies = []

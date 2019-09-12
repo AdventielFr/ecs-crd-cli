@@ -59,6 +59,8 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
             data = self.bind_data(elmt)
             self._log_information(key='- '+data, value = None, indent=6)
             condition[name]['Values'].append(data)
+        # unique
+        condition[name]['Values'] = [x for i, x in enumerate(condition[name]['Values']) if i == condition[name]['Values'].index(x)]
 
     def _convert_2_condition(self,item):
         condition = {}
@@ -82,7 +84,7 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
 
         if condition['Field'] == 'source-ip':
             self._convert_2_condition_generic(item, condition,'SourceIpConfig')
-
+       
         return condition       
    
     def _process_listener_rule(self, listener_infos, listener_rule_infos, item, target_group, container_name, container_port):
@@ -94,6 +96,9 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
         listener_rule['Properties']['ListenerArn'] = listener_rule_infos.listener_arn
         
         self._log_sub_title(f'Container "{container_name}:{container_port}"')
+
+        self._log_information(key="Listerner ARN",value=listener_rule['Properties']['ListenerArn'],indent=1)
+        self._log_information(key="Priority",value=str(listener_rule['Properties']['Priority']),indent=1)
 
         # Actions
         listener_rule['Properties']['Actions'] = []
@@ -112,6 +117,7 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
         listener_rule['Properties']['Conditions'] = []
         for condition in listener_rule_infos.configuration['rule']['conditions']:
             listener_rule['Properties']['Conditions'].append(self._convert_2_condition(condition))
+
         
         self.infos.green_infos.stack['Resources'][item['TargetGroupArn']['Ref'].replace('TargetGroup','ListenerRule')] = listener_rule
         
@@ -223,7 +229,7 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
         priorities = []
         for item in response['Rules']:
             if self.is_int(item['Priority']):
-                priorities.append(item['Priority'])
+                priorities.append(int(item['Priority']))
         
         priorities = sorted(priorities)
         # si il n'existe pas de priorité pour existance pour la pri

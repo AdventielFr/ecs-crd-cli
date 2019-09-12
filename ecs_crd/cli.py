@@ -86,9 +86,9 @@ def _common_action(environment, region, configuration_file, configuration_dir, v
 @main.command()
 @click.option('-e','--environment', required=True, default= 'stage', help='Environment to deploy.', show_default=True )
 @click.option('-r','--region', required=True, default= 'eu-west-3', help='Amazon Web Service region used to deploy ECS service.', show_default=True )
-@click.option('-c','--configuration-file', required=False, help='deployment configuration file.')
+@click.option('-f','--configuration-file', required=False, help='deployment configuration file.')
 @click.option('-d','--configuration-dir', required=False, help='directory to find the deployment configuration file.')
-@click.option('--verbose', count=True)
+@click.option('-v','--verbose', is_flag=True, default=False, help='activate verbose log.')
 def un_deploy(
         environment, 
         region, 

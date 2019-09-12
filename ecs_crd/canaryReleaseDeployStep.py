@@ -102,7 +102,7 @@ class CanaryReleaseDeployStep(ABC):
             time.sleep(tick)
             t += tick
             r = self.second_to_string(t)
-            self.logger.info(f' {label} ... [{r} elapsed]')
+            self.logger.info(f'{label} ... [{r} elapsed]')
 
     #----------------------------------------------------
     #
@@ -124,4 +124,19 @@ class CanaryReleaseDeployStep(ABC):
         if minutes > 0:
             result += f'{minutes}m'
         result += f'{seconds}s'
+        return result
+            
+    def _generate_name(self, canary_release ='', suffix = ''):
+        env = f'{self.infos.environment}-'
+        o = None
+        if len(env)>6:
+            o = slice(5)
+            env =f'{self.infos.environment[o]}-'
+        cr = canary_release
+        if len(cr)>2:
+            o = slice(2)
+            cr = cr[2:]
+        o = slice(64 - (len(env) + len(cr) + len(suffix)+1))
+        var = self.infos.service_name[o]
+        result = f'{env}{var}{suffix}-{cr}'
         return result

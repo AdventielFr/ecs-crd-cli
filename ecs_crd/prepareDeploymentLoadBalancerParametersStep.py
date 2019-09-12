@@ -38,7 +38,7 @@ class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
 
             self.infos.init_infos.stack['Parameters']['LoadBalancerBlue']['Default'] = albs[0].dns_name
             self.infos.init_infos.stack['Parameters']['LoadBalancerGreen']['Default'] = albs[1].dns_name
-            self.infos.init_infos.stack_name = f'{self.infos.environment}-{self.infos.service_name}-0'
+            self.infos.init_infos.stack_name = self._generate_name(canary_release='0')
 
             exist = self._find_cloud_formation_stack(self.infos.init_infos.stack_name)
             
@@ -58,7 +58,8 @@ class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
             self.infos.green_infos.canary_release = green.canary_release
             self.infos.green_infos.alb_dns = green.dns_name
             self.infos.green_infos.alb_hosted_zone_id = green.hosted_zone_id
-            self.infos.green_infos.stack_name = f'{self.infos.environment}-{self.infos.service_name}-{green.canary_release}'    
+
+            self.infos.green_infos.stack_name = self._generate_name(canary_release=green.canary_release)
             exist = self._find_cloud_formation_stack(self.infos.green_infos.stack_name)
             if exist:
                 raise ValueError(f'There is already a cloudformation stack named for the Green release : {self.infos.green_infos.stack_name}.') 

@@ -41,7 +41,8 @@ class ChangeRoute53WeightsStep(CanaryReleaseDeployStep):
             blue_weight = 100 - green_weight
 
         self.logger.info('')
-        self.logger.info(' Blue {}% <-=-> {}% Green'.format(str(blue_weight).rjust(3),str(green_weight).rjust(3)))
+        self._log_information(key='DNS weight blue',value =str(blue_weight)+'%')
+        self._log_information(key='DNS weight green',value =str(green_weight)+'%')
         self.logger.info('')
 
         client.change_resource_record_sets(
@@ -117,9 +118,9 @@ class CheckGreenHealthStep(CanaryReleaseDeployStep):
             state = "UNKNOWN"
             if len(response['TargetHealthDescriptions']) > 0:
                 state = response['TargetHealthDescriptions'][0]['TargetHealth']['State'].upper()
-            self.logger.info(f'Target Group')
-            self.logger.info(f'  Arn    : {e}')
-            self.logger.info(f'  State  : {state}')
+            self._log_information(key='Target Group',value ='')
+            self._log_information(key='ARN',value =e, indent=1)
+            self._log_information(key='State',value =state, indent=1)
             result.append(state)
         return result
 

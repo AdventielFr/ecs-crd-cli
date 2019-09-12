@@ -54,25 +54,6 @@
         "TaskExecutionRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
-                "RoleName": {
-                    "Fn::Join": [
-                        "",
-                        [
-                            {
-                                "Ref": "Environment"
-                            },
-                            "-",
-                            {
-                                "Ref": "ServiceName"
-                            },
-                            "-",
-                            {
-                                "Ref": "CanaryRelease"
-                            },
-                            "-ecs-task-execution-role"
-                        ]
-                    ]
-                },
                 "AssumeRolePolicyDocument": {
                     "Version": "2012-10-17",
                     "Statement": [

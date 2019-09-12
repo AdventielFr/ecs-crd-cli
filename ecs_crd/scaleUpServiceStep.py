@@ -18,12 +18,13 @@ class ScaleUpServiceStep(CanaryReleaseDeployStep):
     def _on_execute(self):
         """operation containing the processing performed by this step"""
         try:
-            self.logger.info('  Scaling up service in progress ...')
+            self.logger.info('')
+            self.logger.info('Scaling up service in progress ...')
             self.logger.info('')
             time.sleep(10)
             client = boto3.client('ecs', region_name=self.infos.region)
             service_arn = self._find_service_arn(client)
-            self.logger.info(f'  Service : {service_arn}')
+            self.logger.info(f'Service : {service_arn}')
             if service_arn == None:
                 raise ValueError(f'Service not found')
             self.logger.info('')
@@ -38,7 +39,7 @@ class ScaleUpServiceStep(CanaryReleaseDeployStep):
             )
             self.wait(self.infos.scale_infos.wait, 'Scaling up in progress')
             self.logger.info('')
-            self.logger.info(f' Desired instances : {self.infos.scale_infos.desired}')
+            self.logger.info(f'Desired instances : {self.infos.scale_infos.desired}')
             return ChangeRoute53WeightsStep(self.infos, self.logger)
 
         except Exception as e:

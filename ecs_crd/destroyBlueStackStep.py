@@ -13,7 +13,7 @@ class DestroyBlueStackStep(CanaryReleaseDeployStep):
 
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        self.timer = 10
+        self.timer = 5
         super().__init__(infos, 'Delete Blue Cloudformation Stack', logger)
 
     def _on_execute(self):
@@ -43,22 +43,24 @@ class DestroyBlueStackStep(CanaryReleaseDeployStep):
         """pause the process and wait for the result of the cloud formation stack deletion"""
         wait = 0
         while True:
-            time.sleep(self.timer)
             wait = wait + self.timer
             w = self.second_to_string(wait)
-            self.logger.info(f'')
+            self.logger.info('')
             time.sleep(self.timer)
             self.logger.info(f'Deleting stack in progress ... [{w} elapsed]')
-            response = client.list_stack_resources(
-                StackName=self.infos.blue_infos.stack_id)
-            delete = True
-            for i in response['StackResourceSummaries']:
-                self.logger.info('  '+i['LogicalResourceId'].ljust(
-                    40, '.')+i['ResourceStatus'])
-                if i['ResourceStatus'] == 'DELETE_FAILED':
-                    raise ValueError(
-                        f"Error delete cloudformation stack : {i}")
-                if i['ResourceStatus'] == 'DELETE_IN_PROGRESS':
-                    delete = False
-            if delete:
-                break
+            response = client.describe_stacks(StackName = self.infos.blue_infos.stack_id)
+            stack = response['Stacks'][0]
+            response2 = client.list_stack_resources(StackName = self.infos.blue_infos.stack_id)
+            for resource in response2['StackResourceSummaries']:
+                message = '  '+resource['LogicalResourceId'].ljust(40,'.')+resource['ResourceStatus']
+                if 'ResourceStatusReason'in resource:
+                    message += f' ( {resource["ResourceStatusReason"]} )'
+                self.logger.info(message)
+                    
+            if stack['StackStatus'] == 'DELETE_IN_PROGRESS':
+                continue
+            else:
+                if stack['StackStatus'] == 'DELETE_COMPLETE':
+                    break
+                else:
+                    raise ValueError('Error deletion blue cloudformation stack')

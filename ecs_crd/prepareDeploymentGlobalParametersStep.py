@@ -26,8 +26,7 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
         """update the external ip informations for the service"""
         self.infos.external_ip = self._find_external_ip()
         self._log_information(key = 'External IP', value = self.infos.external_ip, ljust=18)
-       
-
+  
     def _process_project(self):
         """update the project name informations for the service"""
         self.infos.project = self.configuration['service']['project']
