@@ -2,6 +2,7 @@ import click
 import os
 import logging
 import boto3
+import sys
 
 from ecs_crd.prepareDeploymentGlobalParametersStep import PrepareDeploymentGlobalParametersStep
 from ecs_crd.prepareUnDeploymentStep import PrepareUnDeploymentStep
@@ -59,21 +60,23 @@ def main():
 @click.option('-f','--configuration-file', required=False, help='deployment configuration file.')
 @click.option('-d','--configuration-dir', required=False, help='directory to find the deployment configuration file.')
 @click.option('-v','--verbose', is_flag=True, default=False, help='activate verbose log.')
+@click.option('--log-file', required=False, help='output log file result.')
 def deploy(
         environment, 
         region, 
         configuration_file,
         configuration_dir,
-        verbose):
-    logger, canary_infos = _common_action(environment, region, configuration_file, configuration_dir, verbose)
+        verbose,
+        log_file):
+    logger, canary_infos = _common_action(environment, region, configuration_file, configuration_dir, verbose, log_file)
     canary_infos.action = 'deploy'
     canary_step = PrepareDeploymentGlobalParametersStep(canary_infos, logger)
     while (canary_step != None):
         canary_step = canary_step.execute()
-    return canary_infos.exit_code
+    sys.exit(canary_infos.exit_code)
 
-def _common_action(environment, region, configuration_file, configuration_dir, verbose):
-    logger = _create_logger(verbose)
+def _common_action(environment, region, configuration_file, configuration_dir, verbose, log_file):
+    logger = _create_logger(verbose, log_file)
     parameters = Parameters(logger)
     parameters.environment = environment
     parameters.region = region
@@ -89,32 +92,37 @@ def _common_action(environment, region, configuration_file, configuration_dir, v
 @click.option('-f','--configuration-file', required=False, help='deployment configuration file.')
 @click.option('-d','--configuration-dir', required=False, help='directory to find the deployment configuration file.')
 @click.option('-v','--verbose', is_flag=True, default=False, help='activate verbose log.')
+@click.option('--log-file', required=False, help='output log file result.')
 def un_deploy(
         environment, 
         region, 
         configuration_file,
         configuration_dir,
-        verbose):
-    logger, canary_infos = _common_action(environment, region, configuration_file, configuration_dir, verbose)
+        verbose,
+        log_file):
+    logger, canary_infos = _common_action(environment, region, configuration_file, configuration_dir, verbose, log_file)
     canary_infos.action = 'undeploy'
     canary_step = PrepareUnDeploymentStep(canary_infos, logger)
     while (canary_step != None):
         canary_step = canary_step.execute()
-    return canary_infos.exit_code
+    sys.exit(canary_infos.exit_code)
 
-def _create_logger(verbose):
+def _create_logger(verbose, log_file):
     logger = logging.getLogger('ecs-crd')
     logger.setLevel(logging.INFO)
     formatter = None
     level = logging.DEBUG if verbose else logging.INFO
     logging.getLogger("boto3").setLevel(level)
-
     if level == logging.DEBUG:
         boto3.set_stream_logger(name='boto3', level=logging.DEBUG)
         boto3.set_stream_logger(name='botocore', level=logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s : %(name)s : %(levelname)s :  %(message)s')
     else:
         formatter= logging.Formatter('%(name)s : %(message)s')
+
+    if log_file:
+        logging.basicConfig( filename=log_file, level=logging.DEBUG)
+
     ch = logging.StreamHandler()
     ch.setFormatter(formatter)
     logger.addHandler(ch)

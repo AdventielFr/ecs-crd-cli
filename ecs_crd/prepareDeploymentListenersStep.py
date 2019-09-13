@@ -225,7 +225,7 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
         if 'priority' in listener_rule_infos.configuration['rule']:
             result = int(listener_rule_infos.configuration['rule']['priority'])
         client = boto3.client('elbv2', region_name = self.infos.region)
-        response = client.describe_rules( ListenerArn = listener_rule_infos.listener_arn)
+        response = client.describe_rules(ListenerArn = listener_rule_infos.listener_arn)
         priorities = []
         for item in response['Rules']:
             if self.is_int(item['Priority']):
