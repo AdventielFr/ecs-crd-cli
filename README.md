@@ -91,10 +91,10 @@ canary:
       wait: 60
 ```
 
-### canary.group & canary.releases
+##### canary.group & canary.releases
 
 The group tag is used to identify which application load balancer group the service should deploy to. ( show AWS Application Load Balancer Tags **CanaryGroup** )
 
-The release tag identifies the two application load balancers. The values for blue and green are 'CanaryRelease' labels on application load balancers
+The release tag identifies the two application load balancers. The values for blue and green are **CanaryRelease** labels on application load balancers
 
 ![alt text](_docs/deploy.canary.group.png)
