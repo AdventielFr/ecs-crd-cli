@@ -23,7 +23,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
     def _process_container_image(self, item, container):
         """update the image informations for the current container"""
         container['Image'] = self.bind_data(
-            '{{account_id}}.dkr.ecr.{{region}}.amazonaws.com/{{name}}:{{version}}')
+            '{{account_id}} 
         if 'image' in item:
             container['Image'] = self.bind_data(item['image'])
         self._log_information(key='Image', value=container["Image"], indent=1)

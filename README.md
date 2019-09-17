@@ -282,7 +282,7 @@ service:
 
 &nbsp;&nbsp;**optional** : true
 
-#### V.2.9 - service.containers
+#### V.2.10 - service.containers
 
 &nbsp;&nbsp;**description** : The list of container defintitions. For more information see ( container tag definition V.3 )
 
@@ -300,6 +300,10 @@ service:
     - name: ...
       image: ...
       cpu: ...
+      memory: ...
+      memory_reservation: ...
+      port_mappings: ...
+      entry_point: ...
 ```
 
 #### V.3.1 - container.name
@@ -330,7 +334,7 @@ with,
 
 &nbsp;&nbsp;**type** : string
 
-&nbsp;&nbsp;**default** : default
+&nbsp;&nbsp;**default** : **{{account_id}}**.dkr.ecr.**{{region}}**.Amazonaws.com/**{{name}}**:**{{version}}**
 
 #### V.3.3 - container.cpu
 
@@ -341,6 +345,93 @@ with,
 &nbsp;&nbsp;**type** : integer
 
 &nbsp;&nbsp;**default** : 128
+
+#### V.3.4 - container.memory
+
+**description** : The amount (in MiB) of memory used by the task. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html#cfn-ecs-taskdefinition-memory)
+
+&nbsp;&nbsp;**optional** : true
+
+&nbsp;&nbsp;**type** : integer
+
+&nbsp;&nbsp;**default** : 128
+
+#### V.3.4 - container.memory
+
+**description** : The amount (in MiB) of memory to present to the container. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions.html#cfn-ecs-taskdefinition-containerdefinition-memory)
+
+&nbsp;&nbsp;**optional** : true
+
+&nbsp;&nbsp;**type** : integer
+
+&nbsp;&nbsp;**default** : 128
+
+#### V.3.4 - container.memory_reservation
+
+**description** : The soft limit (in MiB) of memory to reserve for the container. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions.html#cfn-ecs-taskdefinition-containerdefinition-memoryreservation)
+
+&nbsp;&nbsp;**optional** : true
+
+&nbsp;&nbsp;**type** : integer
+
+&nbsp;&nbsp;**default** :
+
+#### V.3.5 - container.port_mappings
+
+**description** : The list of port mappings for the container. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions.html#cfn-ecs-taskdefinition-containerdefinition-portmappings)
+
+&nbsp;&nbsp;**optional** : true
+
+&nbsp;&nbsp;**type** : Pors mapping tags ( see Container Port mappings definition V.4 )
+
+#### V.3.6 - container.entry_point
+
+**description** : The entry point that is passed to the container. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions.html#cfn-ecs-taskdefinition-containerdefinition-environment)
+
+&nbsp;&nbsp;**optional** : true
+
+&nbsp;&nbsp;**type** :  list of key: value
+
+#### V.3.7 - container.environment
+
+**description** : The environment variables to pass to a container. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions.html#cfn-ecs-taskdefinition-containerdefinition-entrypoint)
+
+&nbsp;&nbsp;**optional** : false
+
+&nbsp;&nbsp;**type** :  list of string
+
+
+#### V.4 - Container Port mappings definition
+
+For more informations [see AWS documentation] (https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions-portmappings.html)
+
+##### V.4.1 -  port_mappings.container_port
+
+&nbsp;&nbsp;**description** : The port number on the container that is bound to the user-specified or automatically assigned host port. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions-portmappings.html#cfn-ecs-taskdefinition-containerdefinition-portmappings-containerport)
+
+&nbsp;&nbsp;**optional** : false
+
+&nbsp;&nbsp;**type** : integer
+
+##### V.4.2 -  port_mappings.host_port
+
+&nbsp;&nbsp;**description** : The port number on the container instance to reserve for your container. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions-portmappings.html#cfn-ecs-taskdefinition-containerdefinition-portmappings-readonly)
+
+&nbsp;&nbsp;**optional** : true
+
+&nbsp;&nbsp;**type** : integer
+
+&nbsp;&nbsp;**default** : 0
+
+##### V.4.3 -  port_mappings.protocol
+
+&nbsp;&nbsp;**description** : The protocol used for the port mapping. Valid values are tcp and udp. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions-portmappings.html#cfn-ecs-taskdefinition-containerdefinition-portmappings-sourcevolume)
+
+&nbsp;&nbsp;**optional** : true
+
+&nbsp;&nbsp;**type** : string
+
+&nbsp;&nbsp;**default** : tcp
 
 ### V.2 - target_group tag
 
