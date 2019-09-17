@@ -72,7 +72,7 @@ To undeploy a service, you must use the **undeploy** sub command. The arguments 
 
 The description file of a deployment is file in yml format. The format of this file is the following.
 
-### V.1 - canary tag
+### V.1 - canary tag definition
 
 The "canary" tag contains the definition of the deployment strategy.
 
@@ -106,19 +106,19 @@ Information about selecting the application load balancer group used for service
 
 ##### V.1.2.1 - canary.releases.blue
 
-**description** : Identifier of the first application load balancer
+&nbsp;&nbsp;**description** : Identifier of the first application load balancer
 
-**type**: string
+&nbsp;&nbsp;**type**: string
 
-**optional** : false
+&nbsp;&nbsp;**optional** : false
 
 ##### V.1.2.2 - canary.releases.green
 
-**description** : Identifier of the second application load balancer
+&nbsp;&nbsp;**description** : Identifier of the second application load balancer
 
-**type**: string
+&nbsp;&nbsp;**type** : string
 
-**optional** : false
+&nbsp;&nbsp;**optional** : false
 
 ![alt text](_docs/deploy.canary.group.png)
 
@@ -128,23 +128,23 @@ Information about scaling the service for deployment.
 
 #### V.1.3.1 - canary.scale.wait
 
-**description** : Waiting time after scaling the number of service intances in the cluster
+&nbsp;&nbsp;**description** : Waiting time after scaling the number of service intances in the cluster
 
-**type** : integer
+&nbsp;&nbsp;**type** : integer
 
-**default** : 60
+&nbsp;&nbsp;**default** : 60
 
-**optional** : true
+&nbsp;&nbsp;**optional** : true
 
 #### V.1.3.2 - canary.scale.desired
 
-**description** : The Number of desired instances of the service in the cluster
+&nbsp;&nbsp;**description** : The Number of desired instances of the service in the cluster
 
-**type**: integer
+&nbsp;&nbsp;**type**: integer
 
-**default** : 2
+&nbsp;&nbsp;**default** : 2
 
-**optional** : true
+&nbsp;&nbsp;**optional** : true
 
 #### V.1.3.2 - canary.strategy
 
@@ -175,26 +175,174 @@ each of item of stategy is composed of
 
 #### V.1.3.2.1 - canary.strategy.weight
 
-**description** : The weight for DNS of green application load balancers.
+&nbsp;&nbsp;**description** : The weight for DNS of green application load balancers.
 
-**type**: integer
+&nbsp;&nbsp;**type** : integer
 
-**optional** : false
+&nbsp;&nbsp;**optional** : false
 
 #### V.1.3.2.1 - canary.strategy.wait
 
-**description** : The timeout period before testing the different health checks for target groups associated with the green application load balancer.
+&nbsp;&nbsp;**description** : The timeout period before testing the different health checks for target groups associated with the green application load balancer.
 
-**type**: integer
+&nbsp;&nbsp;**type** : integer
 
-**optional** : false
+&nbsp;&nbsp;**optional** : false
 
 Example of deployment strategy
 
 ![alt text](_docs/strategy-step.png)
 
-### V.1 - service tag
+### V.2 - service tag definition
 
 The "service" tag contains the definition of the service to deploy. The definition is very similar to the statement of an ECS service by AWS cloud formation
 
+```
+service:
+  project: ...
+  name: ...
+  cluster: ...
+  fqdn: ...
+  version: ...
+  scheduling_strategy: ...
+  platform_version: ...
+  placement_constraints: ...
+  placement_strategies: ...
+  containers: ...
+  policies: ...
+```
 
+#### V.2.1 - service.**project**
+
+&nbsp;&nbsp;**description** : The project name. Once the value is filled you can use the **{{project}}** template for the other properties.
+
+&nbsp;&nbsp;**type** : string
+
+&nbsp;&nbsp;**optional** : false
+
+#### V.2.2 - service.name
+
+&nbsp;&nbsp;**description** : The service name. Once the value is filled you can use the **{{name}}** template for the other properties.
+
+&nbsp;&nbsp;**type**: string
+
+&nbsp;&nbsp;**optional** : false
+
+#### V.2.3 - service.cluster
+
+&nbsp;&nbsp;**description** : ECS cluster name where the service is to be deployed.
+
+&nbsp;&nbsp;**type** : string
+
+&nbsp;&nbsp;**optional** : false
+
+#### V.2.4 - service.fqdn
+
+&nbsp;&nbsp;**description** : Fully qualified domain name of the service to register in AWS Route 53 domain. Once the value is filled you can use the **{{fqdn}}** template for the other properties.
+
+&nbsp;&nbsp;**type**  string
+
+&nbsp;&nbsp;**optional** : false
+
+#### V.2.5 - service.version
+
+&nbsp;&nbsp;**description** : Version of the service. Once the value is filled you can use the **{{fqdn}}** template for the other properties.
+
+&nbsp;&nbsp;**type** : string
+
+&nbsp;&nbsp;**optional** : false
+
+#### V.2.6 - service.scheduling_strategy
+
+&nbsp;&nbsp;**description** : The scheduling strategy to use for the service. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html#cfn-ecs-service-schedulingstrategy)
+
+&nbsp;&nbsp;**type** : string
+
+&nbsp;&nbsp;**optional** : true
+
+#### V.2.7 - service.platform_version
+
+&nbsp;&nbsp;**description** : The platform version that your tasks in the service are running on. A platform version is specified only for tasks using the Fargate launch type. If one isn't specified, the LATEST platform version is used by default. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html#cfn-ecs-service-platformversion)
+
+&nbsp;&nbsp;**type** : string
+
+&nbsp;&nbsp;**optional** : true
+
+#### V.2.8 - service.placement_constraints
+
+&nbsp;&nbsp;**description** : An array of placement constraint objects to use for tasks in your service. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html#cfn-ecs-service-placementconstraints)
+
+&nbsp;&nbsp;**type** : string
+
+&nbsp;&nbsp;**optional** : true
+
+#### V.2.9 - service.placement_strategies
+
+&nbsp;&nbsp;**description** : The placement strategy objects to use for tasks in your service. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html#cfn-ecs-service-placementstrategies)
+
+&nbsp;&nbsp;**optional** : true
+
+#### V.2.9 - service.containers
+
+&nbsp;&nbsp;**description** : The list of container defintitions. For more information see ( container tag definition V.3 )
+
+&nbsp;&nbsp;**type** : container tag definition
+
+&nbsp;&nbsp;**optional** : false
+
+### V.3 - container tag definition
+
+The "container" tag contains the definition of containers to deploy. The definition is very similar to the statement of an ECS task definition by AWS cloud formation
+
+```
+service:
+  containers:
+    - name: ...
+      image: ...
+      cpu: ...
+```
+
+#### V.3.1 - container.name
+
+&nbsp;&nbsp;**description** : The name of container in the service.
+
+&nbsp;&nbsp;**type** : string
+
+&nbsp;&nbsp;**optional** : true
+
+&nbsp;&nbsp;**default** : "default"
+
+#### V.3.2 - container.image
+
+&nbsp;&nbsp;**description** : The docker image to deploy. If the value is not filled in, the value will be **{{account_id}}**.dkr.ecr.**{{region}}**.Amazonaws.com/**{{name}}**:**{{version}}**
+
+with,
+
+* {{account_id}} : aws account owner
+
+* {{region}} : Aws region to deploy the service ( see IV.1.2 argument Command LIne )
+
+* {{name}} : Name of service to deploy ( see V.2.2 )
+
+* {{version}} : Version of service to deploy ( see V.2.5 )
+
+&nbsp;&nbsp;**optional** : true
+
+&nbsp;&nbsp;**type** : string
+
+&nbsp;&nbsp;**default** : default
+
+#### V.3.3 - container.cpu
+
+**description** : The number of cpu units used by the task. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html#cfn-ecs-taskdefinition-cpu)
+
+&nbsp;&nbsp;**optional** : true
+
+&nbsp;&nbsp;**type** : integer
+
+&nbsp;&nbsp;**default** : 128
+
+### V.2 - target_group tag
+
+
+### V.3 - listener tag
