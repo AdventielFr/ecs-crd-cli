@@ -3,10 +3,13 @@ import os
 import logging
 import boto3
 import sys
+import re
+import codecs
 
 from ecs_crd.prepareDeploymentGlobalParametersStep import PrepareDeploymentGlobalParametersStep
 from ecs_crd.prepareUnDeploymentStep import PrepareUnDeploymentStep
 from ecs_crd.canaryReleaseInfos import CanaryReleaseInfos
+from ecs_crd.versionInfos import VersionInfos
 
 class Parameters:
     def __init__(self, logger):
@@ -50,23 +53,25 @@ class Parameters:
         self.logger.info('') 
         self.logger.info(f'Check parameters : COMPLETED')
 
+version_infos = VersionInfos()
+
 @click.group()
 def main():
-    pass
+    pass 
 
-@main.command()
+@main.command(help='deploy the ECS service')
 @click.option('-e','--environment', required=True, default= 'stage', help='Environment to deploy.', show_default=True )
 @click.option('-r','--region', required=True, default= 'eu-west-3', help='Amazon Web Service region used to deploy ECS service.', show_default=True )
 @click.option('-f','--configuration-file', required=False, help='deployment configuration file.')
 @click.option('-d','--configuration-dir', required=False, help='directory to find the deployment configuration file.')
-@click.option('-v','--verbose', is_flag=True, default=False, help='activate verbose log.')
+@click.option('--verbose', is_flag=True, default=False, help='activate verbose log.')
 @click.option('--log-file', required=False, help='output log file result.')
 def deploy(
         environment, 
         region, 
         configuration_file,
-        configuration_dir,
-        verbose,
+        configuration_dir, 
+        verbose, 
         log_file):
     logger, canary_infos = _common_action(environment, region, configuration_file, configuration_dir, verbose, log_file)
     canary_infos.action = 'deploy'
@@ -83,22 +88,22 @@ def _common_action(environment, region, configuration_file, configuration_dir, v
     parameters.configuration_file = configuration_file
     parameters.configuration_dir = configuration_dir
     parameters.validate()
-    canary_infos = CanaryReleaseInfos(parameters.environment, parameters.region, parameters.configuration_file)
+    canary_infos = CanaryReleaseInfos(parameters.environment, parameters.region, parameters.configuration_file, version_infos)
     return logger, canary_infos
 
-@main.command()
+@main.command(help='undeploy the ECS service')
 @click.option('-e','--environment', required=True, default= 'stage', help='Environment to deploy.', show_default=True )
 @click.option('-r','--region', required=True, default= 'eu-west-3', help='Amazon Web Service region used to deploy ECS service.', show_default=True )
 @click.option('-f','--configuration-file', required=False, help='deployment configuration file.')
 @click.option('-d','--configuration-dir', required=False, help='directory to find the deployment configuration file.')
-@click.option('-v','--verbose', is_flag=True, default=False, help='activate verbose log.')
+@click.option('--verbose', is_flag=True, default=False, help='activate verbose log.')
 @click.option('--log-file', required=False, help='output log file result.')
-def un_deploy(
+def undeploy(
         environment, 
         region, 
         configuration_file,
-        configuration_dir,
-        verbose,
+        configuration_dir, 
+        verbose, 
         log_file):
     logger, canary_infos = _common_action(environment, region, configuration_file, configuration_dir, verbose, log_file)
     canary_infos.action = 'undeploy'
@@ -106,6 +111,11 @@ def un_deploy(
     while (canary_step != None):
         canary_step = canary_step.execute()
     sys.exit(canary_infos.exit_code)
+
+@main.command(name='version', help='show CLI version')
+def version():
+    version_infos = VersionInfos()
+    print(f'{version_infos.description} - {version_infos.version}')
 
 def _create_logger(verbose, log_file):
     logger = logging.getLogger('ecs-crd')

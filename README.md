@@ -85,8 +85,11 @@ canary:
   scale:
     wait: 60
   strategy:
-    - weight: 50
-      wait: 60
+    - weight: 10
+      wait: 70
+    - weight: 60
+      wait: 50
+
 ```
 
 #### V.1.1 - canary.group
@@ -145,7 +148,9 @@ Information about scaling the service for deployment.
 
 #### V.1.3.2 - canary.strategy
 
-Contains the definition of the service deployment strategy. A deployment strategy is composed of state that allows changing the distribution of DNS weights between application load balancers. If during deployment of the service the new version of the service is considered as invalid, the deployment is canceled and a rollback is performed.
+Contains the definition of the service deployment strategy. A deployment strategy is composed of state that allows changing the distribution of DNS weights between application load balancers.
+
+If during deployment of the service the new version of the service is considered as invalid, the deployment is canceled and a rollback is performed.
 
 <table>
     <tr>
@@ -165,5 +170,31 @@ Contains the definition of the service deployment strategy. A deployment strateg
         </td>
     </tr>
 <table>
+
+each of item of stategy is composed of
+
+#### V.1.3.2.1 - canary.strategy.weight
+
+**description** : The weight for DNS of green application load balancers.
+
+**type**: integer
+
+**optional** : false
+
+#### V.1.3.2.1 - canary.strategy.wait
+
+**description** : The timeout period before testing the different health checks for target groups associated with the green application load balancer.
+
+**type**: integer
+
+**optional** : false
+
+Example of deployment strategy
+
+![alt text](_docs/strategy-step.png)
+
+### V.1 - service tag
+
+The "service" tag contains the definition of the service to deploy. The definition is very similar to the statement of an ECS service by AWS cloud formation
 
 

@@ -68,7 +68,7 @@ class ContainerDefinitionsInfos:
             self.secrets = []
 
 class CanaryReleaseInfos:
-    def __init__(self, environment, region, configuration_file):
+    def __init__(self, environment, region, configuration_file, version_info):
         self.id = uuid.uuid4().hex
         self.action = None
         self.account = None
@@ -98,16 +98,9 @@ class CanaryReleaseInfos:
         self.listener_rules_infos = []
         self.secrets_infos = None
         self.elected_release = None
-        self.ecs_crd_version =self._get_version()
+        self.ecs_crd_version =version_info.version
         self.created_date = datetime.datetime.now().strftime('%FT%T%.000Z')
 
-    def _get_version(self):
-        module_path = os.path.abspath(os.path.dirname(__file__))
-        version_file = open(os.path.join(module_path,'__init__.py'), 'r').read()
-        version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
-                              version_file, re.M)
-        return version_match.group(1)
-    
     def _load_green_cloud_formation_template(self):
         result = None
         filename = os.path.dirname(os.path.realpath(__file__))+'/cfn_green_release_deploy.json'

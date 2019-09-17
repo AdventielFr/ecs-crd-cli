@@ -3,28 +3,19 @@ import codecs
 import os.path
 import re
 import sys
+from ecs_crd.versionInfos import VersionInfos
 
 from setuptools import setup, find_packages
 
-here = os.path.abspath(os.path.dirname(__file__))
-def read(*parts):
-    return codecs.open(os.path.join(here, *parts), 'r').read()
-
-def find_version(*file_paths):
-    version_file = read(*file_paths)
-    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
-                              version_file, re.M)
-    if version_match:
-        return version_match.group(1)
-    raise RuntimeError("Unable to find version string.")
+version_infos = VersionInfos()
 
 setup (
     name = 'ecs-crd-cli',
     author = "Adventiel",
     author_email = "gwendall.garnier.fr@gmail.com",
     include_package_data = True,
-    version = find_version("ecs_crd", "__init__.py"),
-    description= 'ECS Canary Release Command LIne deploy',
+    version = version_infos.version,
+    description= version_infos.description,
     url='https://github.com/AdventielFr/ecs-crd-cli.git',
     classifiers = [
         "Programming Language :: Python",
