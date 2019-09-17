@@ -110,7 +110,7 @@ Information about selecting the application load balancer group used for service
 
 &nbsp;&nbsp;**type**: string
 
-&nbsp;&nbsp;**optional** : false
+&nbsp;&nbsp;**required** : true
 
 ##### V.1.2.2 - canary.releases.green
 
@@ -118,7 +118,7 @@ Information about selecting the application load balancer group used for service
 
 &nbsp;&nbsp;**type** : string
 
-&nbsp;&nbsp;**optional** : false
+&nbsp;&nbsp;**required** : true
 
 ![alt text](_docs/deploy.canary.group.png)
 
@@ -134,7 +134,7 @@ Information about scaling the service for deployment.
 
 &nbsp;&nbsp;**default** : 60
 
-&nbsp;&nbsp;**optional** : true
+&nbsp;&nbsp;**required** : false
 
 #### V.1.3.2 - canary.scale.desired
 
@@ -144,7 +144,7 @@ Information about scaling the service for deployment.
 
 &nbsp;&nbsp;**default** : 2
 
-&nbsp;&nbsp;**optional** : true
+&nbsp;&nbsp;**required** : false
 
 #### V.1.3.2 - canary.strategy
 
@@ -179,7 +179,7 @@ each of item of stategy is composed of
 
 &nbsp;&nbsp;**type** : integer
 
-&nbsp;&nbsp;**optional** : false
+&nbsp;&nbsp;**required** : true
 
 #### V.1.3.2.1 - canary.strategy.wait
 
@@ -187,7 +187,7 @@ each of item of stategy is composed of
 
 &nbsp;&nbsp;**type** : integer
 
-&nbsp;&nbsp;**optional** : false
+&nbsp;&nbsp;**required** : true
 
 Example of deployment strategy
 
@@ -218,7 +218,7 @@ service:
 
 &nbsp;&nbsp;**type** : string
 
-&nbsp;&nbsp;**optional** : false
+&nbsp;&nbsp;**required** : true
 
 #### V.2.2 - service.name
 
@@ -226,7 +226,7 @@ service:
 
 &nbsp;&nbsp;**type**: string
 
-&nbsp;&nbsp;**optional** : false
+&nbsp;&nbsp;**required** : true
 
 #### V.2.3 - service.cluster
 
@@ -234,7 +234,7 @@ service:
 
 &nbsp;&nbsp;**type** : string
 
-&nbsp;&nbsp;**optional** : false
+&nbsp;&nbsp;**required** : true
 
 #### V.2.4 - service.fqdn
 
@@ -242,7 +242,7 @@ service:
 
 &nbsp;&nbsp;**type**  string
 
-&nbsp;&nbsp;**optional** : false
+&nbsp;&nbsp;**required** : true
 
 #### V.2.5 - service.version
 
@@ -250,7 +250,7 @@ service:
 
 &nbsp;&nbsp;**type** : string
 
-&nbsp;&nbsp;**optional** : false
+&nbsp;&nbsp;**required** : true
 
 #### V.2.6 - service.scheduling_strategy
 
@@ -258,7 +258,7 @@ service:
 
 &nbsp;&nbsp;**type** : string
 
-&nbsp;&nbsp;**optional** : true
+&nbsp;&nbsp;**required** : false
 
 #### V.2.7 - service.platform_version
 
@@ -266,7 +266,7 @@ service:
 
 &nbsp;&nbsp;**type** : string
 
-&nbsp;&nbsp;**optional** : true
+&nbsp;&nbsp;**required** : false
 
 #### V.2.8 - service.placement_constraints
 
@@ -274,28 +274,28 @@ service:
 
 &nbsp;&nbsp;**type** : string
 
-&nbsp;&nbsp;**optional** : true
+&nbsp;&nbsp;**required** : false
 
 #### V.2.9 - service.placement_strategies
 
 &nbsp;&nbsp;**description** : The placement strategy objects to use for tasks in your service. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html#cfn-ecs-service-placementstrategies)
 
-&nbsp;&nbsp;**optional** : true
+&nbsp;&nbsp;**required** : false
 
 #### V.2.10 - service.containers
 
 &nbsp;&nbsp;**description** : The list of container defintitions. For more information see ( container tag definition V.3 )
 
-&nbsp;&nbsp;**type** : container tag definition
+&nbsp;&nbsp;**type** : list of container tag definitions  ( see  V.3 - Container tag definition )
 
-&nbsp;&nbsp;**optional** : false
+&nbsp;&nbsp;**required** : true
 
-### V.3 - container tag definition
+### V.3 - Container tag definition
 
 The "container" tag contains the definition of containers to deploy. The definition is very similar to the statement of an ECS task definition by AWS cloud formation
 
 ```
-service:
+[service:]
   containers:
     - name: ...
       image: ...
@@ -304,6 +304,10 @@ service:
       memory_reservation: ...
       port_mappings: ...
       entry_point: ...
+      environment: ...
+      command: ...
+      dns_search_domains: ...
+      disable_networking: ...
 ```
 
 #### V.3.1 - container.name
@@ -312,7 +316,7 @@ service:
 
 &nbsp;&nbsp;**type** : string
 
-&nbsp;&nbsp;**optional** : true
+&nbsp;&nbsp;**required** : false
 
 &nbsp;&nbsp;**default** : "default"
 
@@ -330,7 +334,7 @@ with,
 
 * {{version}} : Version of service to deploy ( see V.2.5 )
 
-&nbsp;&nbsp;**optional** : true
+&nbsp;&nbsp;**required** : false
 
 &nbsp;&nbsp;**type** : string
 
@@ -340,7 +344,7 @@ with,
 
 **description** : The number of cpu units used by the task. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html#cfn-ecs-taskdefinition-cpu)
 
-&nbsp;&nbsp;**optional** : true
+&nbsp;&nbsp;**required** : false
 
 &nbsp;&nbsp;**type** : integer
 
@@ -350,66 +354,103 @@ with,
 
 **description** : The amount (in MiB) of memory used by the task. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html#cfn-ecs-taskdefinition-memory)
 
-&nbsp;&nbsp;**optional** : true
+&nbsp;&nbsp;**required** : false
 
 &nbsp;&nbsp;**type** : integer
 
 &nbsp;&nbsp;**default** : 128
 
-#### V.3.4 - container.memory
+#### V.3.5 - container.memory
 
 **description** : The amount (in MiB) of memory to present to the container. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions.html#cfn-ecs-taskdefinition-containerdefinition-memory)
 
-&nbsp;&nbsp;**optional** : true
+&nbsp;&nbsp;**required** : false
 
 &nbsp;&nbsp;**type** : integer
 
 &nbsp;&nbsp;**default** : 128
 
-#### V.3.4 - container.memory_reservation
+#### V.3.6 - container.memory_reservation
 
 **description** : The soft limit (in MiB) of memory to reserve for the container. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions.html#cfn-ecs-taskdefinition-containerdefinition-memoryreservation)
 
-&nbsp;&nbsp;**optional** : true
+&nbsp;&nbsp;**required** : false
 
 &nbsp;&nbsp;**type** : integer
 
-&nbsp;&nbsp;**default** :
-
-#### V.3.5 - container.port_mappings
+#### V.3.7 - container.port_mappings
 
 **description** : The list of port mappings for the container. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions.html#cfn-ecs-taskdefinition-containerdefinition-portmappings)
 
-&nbsp;&nbsp;**optional** : true
+&nbsp;&nbsp;**required** : false
 
-&nbsp;&nbsp;**type** : Pors mapping tags ( see Container Port mappings definition V.4 )
+&nbsp;&nbsp;**type** : list of port mapping tags ( see V.4 - Container Port mapping tag definition )
 
-#### V.3.6 - container.entry_point
+#### V.3.8 - container.entry_point
 
 **description** : The entry point that is passed to the container. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions.html#cfn-ecs-taskdefinition-containerdefinition-environment)
 
-&nbsp;&nbsp;**optional** : true
+&nbsp;&nbsp;**required** : false
 
-&nbsp;&nbsp;**type** :  list of key: value
+&nbsp;&nbsp;**type** :  list of key/value
 
-#### V.3.7 - container.environment
+#### V.3.9 - container.environment
 
 **description** : The environment variables to pass to a container. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions.html#cfn-ecs-taskdefinition-containerdefinition-entrypoint)
 
-&nbsp;&nbsp;**optional** : false
+&nbsp;&nbsp;**required** : false
 
 &nbsp;&nbsp;**type** :  list of string
 
+#### V.3.10 - container.command
 
-#### V.4 - Container Port mappings definition
+**description** : The command that is passed to the container. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions.html#cfn-ecs-taskdefinition-containerdefinition-command)
 
-For more informations [see AWS documentation] (https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions-portmappings.html)
+&nbsp;&nbsp;**required** : false
+
+&nbsp;&nbsp;**type** :  list of string
+
+#### V.3.11 - container.dns_search_domains
+
+**description** : The list of DNS search domains that are presented to the container. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions.html#cfn-ecs-taskdefinition-containerdefinition-dnssearchdomains)
+
+&nbsp;&nbsp;**required** : false
+
+&nbsp;&nbsp;**type** :  list of string
+
+#### V.3.12 - container.disable_networking
+
+**description** : When this parameter is true, networking is disabled within the container. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions.html#cfn-ecs-taskdefinition-containerdefinition-disablenetworking)
+
+&nbsp;&nbsp;**required** : false
+
+&nbsp;&nbsp;**type** :  boolean
+
+#### V.3.13 - container.dns_servers
+
+**description** : The list of DNS servers that are presented to the container.  For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions.html#cfn-ecs-taskdefinition-containerdefinition-dnsservers)
+
+&nbsp;&nbsp;**required** : false
+
+&nbsp;&nbsp;**type** :  list of string
+
+#### V.3.14 - container.dns_servers
+
+**description** : The list of DNS servers that are presented to the container.  For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions.html#cfn-ecs-taskdefinition-containerdefinition-dnsservers)
+
+&nbsp;&nbsp;**required** : false
+
+&nbsp;&nbsp;**type** :  list of string
+
+#### V.4 - Container Port mapping tag definition
+
+For more informations [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions-portmappings.html)
 
 ##### V.4.1 -  port_mappings.container_port
 
 &nbsp;&nbsp;**description** : The port number on the container that is bound to the user-specified or automatically assigned host port. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions-portmappings.html#cfn-ecs-taskdefinition-containerdefinition-portmappings-containerport)
 
-&nbsp;&nbsp;**optional** : false
+&nbsp;&nbsp;**required** : true
 
 &nbsp;&nbsp;**type** : integer
 
@@ -417,7 +458,7 @@ For more informations [see AWS documentation] (https://docs.aws.amazon.com/AWSCl
 
 &nbsp;&nbsp;**description** : The port number on the container instance to reserve for your container. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions-portmappings.html#cfn-ecs-taskdefinition-containerdefinition-portmappings-readonly)
 
-&nbsp;&nbsp;**optional** : true
+&nbsp;&nbsp;**required** : false
 
 &nbsp;&nbsp;**type** : integer
 
@@ -427,7 +468,7 @@ For more informations [see AWS documentation] (https://docs.aws.amazon.com/AWSCl
 
 &nbsp;&nbsp;**description** : The protocol used for the port mapping. Valid values are tcp and udp. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions-portmappings.html#cfn-ecs-taskdefinition-containerdefinition-portmappings-sourcevolume)
 
-&nbsp;&nbsp;**optional** : true
+&nbsp;&nbsp;**required** : false
 
 &nbsp;&nbsp;**type** : string
 
