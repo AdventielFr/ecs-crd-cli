@@ -23,6 +23,16 @@ class PrepareDeploymentTaskDefinitionStep(CanaryReleaseDeployStep):
             cfn['NetworkMode'] = item['network_mode']
             self._log_information(key='NetworkMode',value=cfn["NetworkMode"],ljust=10, indent=1)
 
+    def _process_pid_mode(self, item, cfn):
+        if 'pid_mode' in item:
+            cfn['PidMode'] = item['pid_mode']
+            self._log_information(key='PidMode',value=cfn["PidMode"],ljust=10, indent=1)
+
+    def _process_ipc_mode(self, item, cfn)
+        if 'ipc_mode' in item:
+            cfn['IpcMode'] = item['ipc_cmode']
+            self._log_information(key='IpcMode',value=cfn["IpcMode"],ljust=10, indent=1)
+
     def _process_requires_compatibilities(self, item, cfn):
         if 'requires_compatibilities' in item:
             self._log_information(key='Requires Compatibilities',value='',ljust=10, indent=1)
@@ -42,6 +52,8 @@ class PrepareDeploymentTaskDefinitionStep(CanaryReleaseDeployStep):
             self._process_cpu(item, cfn)
             self._process_memory(item, cfn)
             self._process_network_mode(item, cfn)
+            self._process_ipc_mode(item, cfn)
+            self._process_pid_mode(item,cfn)
             self._process_requires_compatibilities(item, cfn)
             self.infos.save()
             return PrepareDeploymentTargetGroupsStep(self.infos, self.logger)         

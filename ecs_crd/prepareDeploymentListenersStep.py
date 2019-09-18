@@ -113,11 +113,11 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
         self._log_information(key="Port",value=listener_infos['port'],indent=1)
 
         self._log_information(key="Rules", value='', indent=1)
+        
         # Conditions
         listener_rule['Properties']['Conditions'] = []
         for condition in listener_rule_infos.configuration['rule']['conditions']:
             listener_rule['Properties']['Conditions'].append(self._convert_2_condition(condition))
-
         
         self.infos.green_infos.stack['Resources'][item['TargetGroupArn']['Ref'].replace('TargetGroup','ListenerRule')] = listener_rule
         

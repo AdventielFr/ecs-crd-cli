@@ -8,26 +8,46 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
         """initializes a new instance of the class"""
         super().__init__(infos,'Prepare deployment ( IAM Role & Policies )', logger)
 
-    def _find_all_dto_policies(self):
-        """find all dto policies """
+    def _convert_to_dto_policy_info(self, item, count):
+        name = f'policy_{count}'
+        if 'name' in item:
+            name = item['name']
+        resources = []
+        effect = "Allow"
+        if 'effect' in item:
+            effect = item['effect']
+        if 'resources' not in item:
+            resources.append('*')
+        else:
+            for r in item['resources']:
+                resources.append(self.bind_data(r))
+        actions = item['actions']
+        return PolicyInfos(name, effect, actions, resources)
+
+    def _find_all_task_role_policies(self):
+        """find all task role policies policies """
         result = []
-        if 'policies' in self.configuration["service"]:
+        if 'iam_roles' in in self.configuration["service"] and 'task_role' in self.configuration["service"]['iam_roles']:
             count = 1
-            for item in self.configuration['service']['policies']:
-                name = f'policy_{count}'
-                if 'name' in item:
-                    name = item['name']
-                resources = []
-                effect = "Allow"
-                if 'effect' in item:
-                    effect = item['effect']
-                if 'resources' not in item:
-                    resources.append('*')
-                else:
-                    for r in item['resources']:
-                        resources.append(self.bind_data(r))
-                actions = item['actions']
-                result.append(PolicyInfos(name, effect, actions, resources))
+            for item in self.configuration['service']['task_role']:
+                result.append(self._convert_to_dto_policy_info(item,count))
+        return result
+
+    def _find_all_task_execution_role_policies(self):
+        """find all task execution role policies """
+        result = []
+        if 'iam_roles' in in self.configuration["service"] and 'task_execution_role' in self.configuration["service"]['iam_roles']:
+            count = 1
+            for item in self.configuration['service']['task_execution_role']:
+                result.append(self._convert_to_dto_policy_info(item,count))
+        
+        # add secret policy
+        if self.infos.secret_infos != None:
+            cfn_policies = []
+            effect = 'Allow'
+            action = ['kms:Decrypt','secretsmanager:GetSecretValue']
+            resource = self.infos.secret_infos.secrets_arn + self.infos.secret_infos.kms_arn
+            result.append(PolicyInfos('AllowReadSecrets', effect, action,resource))
         return result
 
     def _policy_info_2_cloud_formation_policy(self, policy_info):
@@ -64,11 +84,6 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
             role['Properties'] = {}
             role['Properties']['RoleName'] =  self._generate_name(suffix='-ecs-task', canary_release = self.infos.green_infos.canary_release)
             self._log_information(key='Name',value=role['Properties']['RoleName'])
-            cfn_policies = []
-            for policy in policies:
-                cfn_policies.append(self._policy_info_2_cloud_formation_policy(policy))
-            
-            role['Properties']['Policies'] = cfn_policies
             role['Properties']['AssumeRolePolicyDocument'] = {}
             role['Properties']['AssumeRolePolicyDocument']['Version'] = '2012-10-17'
             role['Properties']['AssumeRolePolicyDocument']['Statement'] = []
@@ -80,6 +95,10 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
             item['Action'] = []
             item['Action'].append('sts:AssumeRole')
             role['Properties']['AssumeRolePolicyDocument']['Statement'].append(item)
+            policy_infos = self._find_all_task_role_policies()
+            for policy_info in policy_infos:
+                cfn_policies.append(self._policy_info_2_cloud_formation_policy(policy_info))
+            role['Properties']['Policies'] = cfn_policies
             self.infos.green_infos.stack['Resources']['TaskRole'] = role
             self.infos.green_infos.stack['Resources']['TaskDefinition']['Properties']['TaskRoleArn'] = {}
             self.infos.green_infos.stack['Resources']['TaskDefinition']['Properties']['TaskRoleArn']['Ref'] = 'TaskRole'
@@ -91,15 +110,13 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
         self.logger.info('')
         self.infos.green_infos.stack['Resources']['TaskExecutionRole']['Properties']['RoleName'] = self._generate_name(suffix='-ecs-exec-task', canary_release = self.infos.green_infos.canary_release)
         self._log_information(key='Name',value=self.infos.green_infos.stack['Resources']['TaskExecutionRole']['Properties']['RoleName'])
-        if self.infos.secret_infos != None:
+        policy_infos = self._find_all_task_execution_role_policies()
+        if len(policy_infos) > 0:
             cfn_policies = []
-            effect = 'Allow'
-            action = ['kms:Decrypt','secretsmanager:GetSecretValue']
-            resource = self.infos.secret_infos.secrets_arn + self.infos.secret_infos.kms_arn
-            policy = PolicyInfos('AllowReadSecrets', effect, action,resource)
-            cfn_policies.append(self._policy_info_2_cloud_formation_policy(policy))
+            for policy_info in policy_infos:
+                cfn_policies.append(self._policy_info_2_cloud_formation_policy(policy))
             self.infos.green_infos.stack['Resources']['TaskExecutionRole']['Properties']['Policies'] = cfn_policies
-
+   
     def _on_execute(self):
         """operation containing the processing performed by this step"""
         try:
