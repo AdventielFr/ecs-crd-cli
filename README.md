@@ -6,13 +6,35 @@ The implementation of Zero Downtime Deployment is based on a number of patterns 
 
 This project aims to provide a tool that runs on console to deploy ECS services using the concepts of canary release and blue/green deployment.
 
-### I.1 - Pattern / Concept
-
-#### I.1.2 Blue/Green deployment
-
-#### I.1.2 Canary deployment
-
 ### I.2 - Prerequistes
+
+To use **ecs-crd-cli**, you must have already provisioned a component set on your AWS account.
+
+### I.2.1 - [ECS cluster](https://aws.amazon.com/ecs/?nc1=h_ls)
+
+You need an ECS cluster containing at least two nodes. Ideally to be resilient, these two EC2 nodes need to be on two different availability zones.
+
+To help you set up your infrastructure, I invite you to visit our github repository [terraform-module](https://github.com/AdventielFr/terraform-aws-ecs-node)
+
+This repository gives you a good basis for provisioning your ECS cluster
+
+### I.2.2 - [AWS Application load balancer](https://aws.amazon.com/elasticloadbalancing/?nc1=h_ls)
+
+You need to have at least 2 AWS Application Load Balancers.These 2 application load balancers must be tagged.
+
+In order for the blue / green deployment to be successful, it is necessary to be able to identify a pair of application load balancers. It is with the labels "CanaryGroup" and "CanaryRelease" that this is possible.
+
+![alt text](_docs/deploy.canary.group.png)
+
+### I.2.3 - [AWS Route 53 DNS](https://aws.amazon.com/route53/?nc1=h_ls)
+
+You need a Route 53 DNS zone that will be used to record the name of the service you will be deploying
+
+### I.2.4 - [AWS Certificat Manager](https://aws.amazon.com/certificate-manager/?nc1=h_ls)
+
+If your service is visible on the internet, which means that the application load balancers are "internet facing", you will have to apply an SSL certificate. For the dynamic provisioning of cerificats, I invite you to use let's encrypt which is free.
+
+To help you set up your infrastructure, I invite you to visit our github repository [terraform-module](https://github.com/AdventielFr/terraform-aws-lets-encrypt-renew-certificates)
 
 ## II - How is deployment done ?
 
@@ -22,13 +44,13 @@ This project aims to provide a tool that runs on console to deploy ECS services 
 
 To install the command line tool, simply install it using pip.
 
-```
+```shell
 pip install ecs-crd-cli
 ```
 
 One of the best practices and do it using a virtualenv.
 
-```
+```shell
 virtualenv -p python3 my-project
 source my-project/bin/activate
 pip install ecs-crd-cli
@@ -119,7 +141,7 @@ Information about selecting the application load balancer group used for service
 
 &nbsp;&nbsp;**required** : yes
 
-![alt text](_docs/deploy.canary.group.png)
+
 
 #### V.1.3 - [canary].scale
 
@@ -284,7 +306,7 @@ service:
 
 &nbsp;&nbsp;**description** : The placement strategy objects to use for tasks in your service. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html#cfn-ecs-service-placementstrategies)
 
-&nbsp;&nbsp;**required** : no
+&nbsp;&nbsp;**required** :  list of placement strategy tag definition ( see V.6 - Placement strategy tag definition )
 
 #### V.2.10 - [service].containers
 
@@ -345,6 +367,14 @@ service:
 &nbsp;&nbsp;**description** : The launch type the task requires. If no value is specified, it will default to EC2. Valid values include EC2 and FARGATE. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html#cfn-ecs-taskdefinition-requirescompatibilities)
 
 &nbsp;&nbsp;**type** : list of string
+
+&nbsp;&nbsp;**required** : no
+
+#### V.2.15 - [service].iam_roles
+
+&nbsp;&nbsp;**description** : Contains the list of iam policies to apply on the service when it starts and when it is running
+
+&nbsp;&nbsp;**type** : iam role tag definition ( see V.7 - IAM roles tag definition )
 
 &nbsp;&nbsp;**required** : no
 
@@ -590,11 +620,33 @@ service:
 
 &nbsp;&nbsp;**default** : tcp
 
-### V.5 - Placement constraint tag definition
+### V.5 - Placement constrains tag definition
 
-The PlacementStrategy property specifies the task placement strategy for a service.
+The PlacementConstraint property specifies an object representing a constraint on task placement in the task definition.
 
-#### V.5.1 - [placement_constraints].field
+#### V.5.1 -  [placement_constraints].expression
+
+**description** : A cluster query language expression to apply to the constraint. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-service-placementconstraint.html#cfn-ecs-service-placementconstraint-expression)
+
+&nbsp;&nbsp;**required** : no
+
+&nbsp;&nbsp;**type** : string
+
+#### V.5.2 -  [placement_constraints].type
+
+**description** : The type of constraint. Use distinctInstance to ensure that each task in a particular group is running on a different container instance. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-service-placementconstraint.html#cfn-ecs-service-placementconstraint-type)
+
+&nbsp;&nbsp;**required** : yes
+
+&nbsp;&nbsp;**type** : string
+
+&nbsp;&nbsp;**allowed values** : distinctInstance | memberOf
+
+### V.6 - Placement strategies tag definition
+
+The placement strategy objects to use for tasks in your service.
+
+#### V.6.1 -  [placement_stategies].field
 
 **description** : The field to apply the placement strategy against. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-service-placementstrategy.html#cfn-ecs-service-placementstrategy-field)
 
@@ -602,11 +654,33 @@ The PlacementStrategy property specifies the task placement strategy for a servi
 
 &nbsp;&nbsp;**type** : string
 
-#### V.5.2 - [placement_constraints].type
+#### V.6.2 - [placement_stategies].type
 
 **description** : The type of placement strategy. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-service-placementstrategy.html#cfn-ecs-service-placementstrategy-type)
 
 &nbsp;&nbsp;**required** : yes
 
 &nbsp;&nbsp;**type** : string
+
+### V.7 - IAM role tag definition
+
+Contains the list of iam policies to apply on the service when it starts and when it is running
+
+#### V.7.1  - [iam_roles].task_execution_role
+
+**description** : Contains the list of iam policies to apply on the service when it is starts
+
+&nbsp;&nbsp;**required** : no
+
+&nbsp;&nbsp;**type** : list of IAM policy tag definition ( see V.8 - IAM policy tag definition)
+
+#### V.7.2  - [iam_roles].task_role
+
+**description** : Contains the list of iam policies to apply on the service when it is running
+
+&nbsp;&nbsp;**required** : no
+
+&nbsp;&nbsp;**type** : list of IAM policy tag definition ( see V.8 - IAM policy tag definition)
+
+### V.8 - IAM policy tag definition
 

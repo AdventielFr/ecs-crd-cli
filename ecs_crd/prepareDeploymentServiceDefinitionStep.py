@@ -29,10 +29,9 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             self.infos.green_infos.stack['Resources']['Service']['Properties']['PlacementConstraints'] = []
             for item in self.configuration['service']['placement_constraints']:
                 constraint = {}
-                constraint['Expression'] = item['expression']
-                constraint['Type'] = "memberOf"
-                if 'type' in item:
-                    constraint['Type'] = item['type']
+                if 'expression' in item:
+                    constraint['Expression'] = item['expression']
+                constraint['Type'] = item['type']
                 self.infos.green_infos.stack['Resources']['Service']['Properties']['PlacementConstraints'].append(constraint)
                 self._log_information(key='- Expression',value=constraint['Expression'],ljust=10, indent=2)
                 self._log_information(key='  Type',value=constraint['Type'],ljust=10, indent=2)
