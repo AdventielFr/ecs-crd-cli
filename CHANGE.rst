@@ -2,6 +2,19 @@
 CHANGELOG
 =========
 
+0.3.0a
+========
+
+Hotfix :
+
+* rename commande un-deploy to undeploy
+* add documentation 
+
+Feature:
+
+* add new command "version" to show in console the version of product
+* refactoring policies tags in service to iam_role -> task_role and iam_role -> task_exection_role 
+
 0.2.0
 ========
 
