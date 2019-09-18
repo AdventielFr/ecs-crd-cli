@@ -30,6 +30,8 @@ In order for the blue / green deployment to be successful, it is necessary to be
 
 You need a Route 53 DNS zone that will be used to record the name of the service you will be deploying
 
+To help you set up your infrastructure, I invite you to visit our github repository [terraform-module](https://github.com/AdventielFr/terraform-aws-route53)
+
 ### I.2.4 - [AWS Certificat Manager](https://aws.amazon.com/certificate-manager/?nc1=h_ls)
 
 If your service is visible on the internet, which means that the application load balancers are "internet facing", you will have to apply an SSL certificate. For the dynamic provisioning of cerificats, I invite you to use let's encrypt which is free.
@@ -66,9 +68,11 @@ pip install ecs-crd-cli
 
 At any time on the command line, it is possible to recover the online help. To do this, simply type --help.
 
-![alt text](_docs/help-video.gif)
+#### IV.1.2 - Show version
 
-#### IV.1.2 Deploy a service
+At any time on the command line, it is possible to recover the version. To do this, simply type version.
+
+#### IV.1.3 Deploy a service
 
 To deploy a service, you must use the **deploy** sub command.The arguments for using this suborder are:
 
@@ -86,7 +90,7 @@ To deploy a service, you must use the **deploy** sub command.The arguments for u
 
 * If you use the **--configuration-dir** argument, the tool will look in the directory for a file of type **environment**.deploy.yml
 
-#### IV.1.3 Undeploy a service
+#### IV.1.4 Undeploy a service
 
 To undeploy a service, you must use the **undeploy** sub command. The arguments for using this suborder are the same as for the suborder **deploy**.
 
@@ -140,8 +144,6 @@ Information about selecting the application load balancer group used for service
 &nbsp;&nbsp;**type** : string
 
 &nbsp;&nbsp;**required** : yes
-
-
 
 #### V.1.3 - [canary].scale
 
@@ -582,7 +584,7 @@ For more informations [see AWS documentation](https://docs.aws.amazon.com/AWSClo
 
 If the value of host_port is zero, the port assignment on the host will be dynamic. AWS ECS assigns a valid port. This solution is only possible for the container that only exposes one and only one port.
 
-```
+```yaml
 service:
   containers:
     - name: nginx
@@ -621,6 +623,13 @@ service:
 &nbsp;&nbsp;**default** : tcp
 
 ### V.5 - Placement constrains tag definition
+
+```yaml
+service:
+  placement_constraints:
+    - expression: "attribute:ecs.instance-type == t2.small"
+    - type: "memberOf"
+```
 
 The PlacementConstraint property specifies an object representing a constraint on task placement in the task definition.
 
@@ -666,6 +675,13 @@ The placement strategy objects to use for tasks in your service.
 
 Contains the list of iam policies to apply on the service when it starts and when it is running
 
+```yaml
+service:
+  iam_roles:
+    - task_execution_role: ...
+    - task_role: ...
+```
+
 #### V.7.1  - [iam_roles].task_execution_role
 
 **description** : Contains the list of iam policies to apply on the service when it is starts
@@ -673,6 +689,18 @@ Contains the list of iam policies to apply on the service when it starts and whe
 &nbsp;&nbsp;**required** : no
 
 &nbsp;&nbsp;**type** : list of IAM policy tag definition ( see V.8 - IAM policy tag definition)
+
+```yaml
+service:
+  iam_roles:
+    - task_execution_role:
+      - name: AllowAllAccessS3
+        effect: Allow
+        resources:
+          - arn:aws:s3:::1111111111-other-bucket
+        actions:
+          - "s3:*"
+```
 
 #### V.7.2  - [iam_roles].task_role
 
@@ -682,5 +710,62 @@ Contains the list of iam policies to apply on the service when it starts and whe
 
 &nbsp;&nbsp;**type** : list of IAM policy tag definition ( see V.8 - IAM policy tag definition)
 
+```yaml
+service:
+  iam_roles:
+    - task_role:
+      - name: AllowAllAccessS3
+        effect: Allow
+        resources:
+          - arn:aws:s3:::1111111111-other-bucket
+        actions:
+          - "s3:*"
+      - name: AllowConsumeSQSMessage
+        effect: Allow
+        resources:
+          - arn:aws:sqs:eu-west-3:{{account_id}:lets-encrypt-renew-certificates-request
+        actions:
+          - "sqs:GetQueueAttributes"
+          - "sqs:GetQueueUrl"
+          - "sqs:ReceiveMessage"
+          - "sqs:DeleteMessage"
+          - "sqs:DeleteMessageBatch"
+```
+
 ### V.8 - IAM policy tag definition
+
+#### V.8.1  - [policy].name
+
+**description** : Name of IAM policy in role
+
+&nbsp;&nbsp;**required** : no
+
+#### V.8.2  - [policy].effect
+
+**description** : Use Allow or Deny to indicate whether the policy allows or denies access.
+
+&nbsp;&nbsp;**required** : no
+
+&nbsp;&nbsp;**allowed values** : Allow | Deny
+
+#### V.8.2  - [policy].resources
+
+**description** : List of AWS resources that are related to the policy definition.
+
+&nbsp;&nbsp;**required** : no
+
+&nbsp;&nbsp;**default** : *
+
+&nbsp;&nbsp;**type** : list of string
+
+#### V.8.3  - [policy].actions
+
+**description** : Include the list of actions allowed or denied by the policy.
+
+&nbsp;&nbsp;**required** : yes
+
+&nbsp;&nbsp;**default** : *
+
+&nbsp;&nbsp;**type** : list of string
+
 

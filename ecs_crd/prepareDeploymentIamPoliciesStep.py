@@ -27,18 +27,18 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
     def _find_all_task_role_policies(self):
         """find all task role policies policies """
         result = []
-        if 'iam_roles' in in self.configuration["service"] and 'task_role' in self.configuration["service"]['iam_roles']:
+        if 'iam_roles' in self.configuration["service"] and 'task_role' in self.configuration["service"]['iam_roles']:
             count = 1
-            for item in self.configuration['service']['task_role']:
+            for item in self.configuration['service']['iam_roles']['task_role']:
                 result.append(self._convert_to_dto_policy_info(item,count))
         return result
 
     def _find_all_task_execution_role_policies(self):
         """find all task execution role policies """
         result = []
-        if 'iam_roles' in in self.configuration["service"] and 'task_execution_role' in self.configuration["service"]['iam_roles']:
+        if 'iam_roles' in self.configuration["service"] and 'task_execution_role' in self.configuration["service"]['iam_roles']:
             count = 1
-            for item in self.configuration['service']['task_execution_role']:
+            for item in self.configuration['service']['iam_roles']['task_execution_role']:
                 result.append(self._convert_to_dto_policy_info(item,count))
         
         # add secret policy
@@ -75,9 +75,9 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
 
     def _process_task_role(self):
         """update the role for the ECS task service"""
-        policies = self._find_all_dto_policies()
+        policies = self._find_all_task_role_policies()
         if len(policies)>0:
-            self._log_sub_title('Task Definition Role')
+            self._log_sub_title('Task role definition')
             self.logger.info('')
             role = {}
             role['Type'] = 'AWS::IAM::Role'
@@ -95,6 +95,7 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
             item['Action'] = []
             item['Action'].append('sts:AssumeRole')
             role['Properties']['AssumeRolePolicyDocument']['Statement'].append(item)
+            cfn_policies = []
             policy_infos = self._find_all_task_role_policies()
             for policy_info in policy_infos:
                 cfn_policies.append(self._policy_info_2_cloud_formation_policy(policy_info))
@@ -106,7 +107,7 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
     def _process_task_execution_role(self):
         """update the role for ECS task execution"""
         self.logger.info('')
-        self._log_sub_title('Task Definition Execution Role')
+        self._log_sub_title('Task execution role definition')
         self.logger.info('')
         self.infos.green_infos.stack['Resources']['TaskExecutionRole']['Properties']['RoleName'] = self._generate_name(suffix='-ecs-exec-task', canary_release = self.infos.green_infos.canary_release)
         self._log_information(key='Name',value=self.infos.green_infos.stack['Resources']['TaskExecutionRole']['Properties']['RoleName'])
@@ -114,7 +115,7 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
         if len(policy_infos) > 0:
             cfn_policies = []
             for policy_info in policy_infos:
-                cfn_policies.append(self._policy_info_2_cloud_formation_policy(policy))
+                cfn_policies.append(self._policy_info_2_cloud_formation_policy(policy_info))
             self.infos.green_infos.stack['Resources']['TaskExecutionRole']['Properties']['Policies'] = cfn_policies
    
     def _on_execute(self):

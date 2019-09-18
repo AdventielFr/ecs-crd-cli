@@ -28,7 +28,7 @@ class PrepareDeploymentTaskDefinitionStep(CanaryReleaseDeployStep):
             cfn['PidMode'] = item['pid_mode']
             self._log_information(key='PidMode',value=cfn["PidMode"],ljust=10, indent=1)
 
-    def _process_ipc_mode(self, item, cfn)
+    def _process_ipc_mode(self, item, cfn):
         if 'ipc_mode' in item:
             cfn['IpcMode'] = item['ipc_cmode']
             self._log_information(key='IpcMode',value=cfn["IpcMode"],ljust=10, indent=1)
@@ -41,9 +41,6 @@ class PrepareDeploymentTaskDefinitionStep(CanaryReleaseDeployStep):
                 cfn['RequiresCompatibilities'].append(e)
                 self._log_information(key='- '+e, value=None,ljust=10, indent=1)
 
-    #----------------------------------------------------
-    #
-    #----------------------------------------------------
     def _on_execute(self):
         """operation containing the processing performed by this step"""
         try:
