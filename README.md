@@ -68,7 +68,7 @@ pip install ecs-crd-cli
 
 At any time on the command line, it is possible to recover the online help. To do this, simply type --help.
 
-#### IV.1.2 - Show version
+#### IV.1.2 - Show  version
 
 At any time on the command line, it is possible to recover the version. To do this, simply type version.
 
@@ -222,22 +222,23 @@ The "service" tag contains the definition of the service to deploy. The definiti
 
 ```yaml
 service:
-  project: ...
-  name: ...
-  cluster: ...
-  fqdn: ...
-  version: ...
-  scheduling_strategy: ...
-  platform_version: ...
+  project: string
+  name: string
+  cluster: string
+  fqdn: string
+  version: string
+  scheduling_strategy: string
+  platform_version: string
   placement_constraints: ...
   placement_strategies: ...
-  requires_compatibilities: ...
-  containers: ...
-  cpu: ...
-  memory: ...
-  ipc_mode: ...
-  network_mode: ...
-  iam_roles: ...
+  requires_compatibilities: string
+  containers:
+    - container_tag_definition
+  cpu: integer
+  memory: integer
+  ipc_mode: string
+  network_mode: string
+  iam_roles: iam_role_tag_definition
 ```
 
 #### V.2.1 - [service].**project**
@@ -380,24 +381,31 @@ service:
 
 &nbsp;&nbsp;**required** : no
 
-### V.3 - Container tag definition
+### V.3 - Container tag definition ( ContainerTagDefinition )
 
 The "container" tag contains the definition of containers to deploy. The definition is very similar to the statement of an ECS task definition by AWS cloud formation
 
 ```yaml
 service:
   containers:
-    - name: ...
-      image: ...
-      cpu: ...
-      memory: ...
-      memory_reservation: ...
-      port_mappings: ...
-      entry_point: ...
-      environment: ...
-      command: ...
-      dns_search_domains: ...
-      disable_networking: ...
+    - name: string
+      image: string
+      cpu: integer
+      memory: integer
+      memory_reservation: integer
+      port_mappings:
+        - port_mapping_tag_definition
+      entry_point:
+        - string
+      environment:
+        - key_pair
+      command:
+        - string
+      dns_search_domains:
+        - string
+      disable_networking: boolean
+      secrets:
+        - string
 ```
 
 #### V.3.1 - [container].name
@@ -558,9 +566,22 @@ with,
 
 &nbsp;&nbsp;**type** :  boolean
 
-#### V.4 - Container Port mapping tag definition
+#### V.4 - Container Port mapping tag definition ( port_mappings_tag_definition )
 
 For more informations [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions-portmappings.html)
+
+```yaml
+service:
+  containers:
+    - name: nginx
+      port_mappings:
+        - container_port: integer
+          host_port: integer
+        - container_port: integer
+          host_port:
+            blue: integer
+            green: integer
+```
 
 ##### V.4.1 - [port_mappings].container_port
 
@@ -678,8 +699,10 @@ Contains the list of iam policies to apply on the service when it starts and whe
 ```yaml
 service:
   iam_roles:
-    - task_execution_role: ...
-    - task_role: ...
+    task_execution_role:
+      - iam_policy_tag_definition
+    task_role: 
+      - iam_policy_tag_definition
 ```
 
 #### V.7.1  - [iam_roles].task_execution_role
@@ -732,7 +755,7 @@ service:
           - "sqs:DeleteMessageBatch"
 ```
 
-### V.8 - IAM policy tag definition
+### V.8 - IAM policy tag definition ( iam_policy_tag_definition )
 
 #### V.8.1  - [policy].name
 
@@ -768,4 +791,4 @@ service:
 
 &nbsp;&nbsp;**type** : list of string
 
-
+#### V.9  - targ
