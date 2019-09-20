@@ -2,6 +2,19 @@
 CHANGELOG
 =========
 
+0.4.0
+========
+
+Feature:
+
+* add container volume feature for efs
+
+
+0.3.0
+========
+
+* release of 0.3.0a
+
 0.3.0a
 ========
 

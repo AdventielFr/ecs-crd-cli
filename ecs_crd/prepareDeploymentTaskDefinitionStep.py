@@ -41,6 +41,69 @@ class PrepareDeploymentTaskDefinitionStep(CanaryReleaseDeployStep):
                 cfn['RequiresCompatibilities'].append(e)
                 self._log_information(key='- '+e, value=None,ljust=10, indent=1)
 
+    def _process_volumes(self, item, cfn):
+        if 'volumes' in item:
+            cfn['Volumes'] = []
+            self._log_information(key='Volumes',value=None,ljust=10, indent=1)
+            for e in item['volumes']:
+                volume = {}
+                volume['Name'] = self.bind_data(item['name'])
+                self._log_information(key='- Name', value=volume['Name'],ljust=10, indent=2)
+                if 'docker_volume_configuration' in e:
+                    volume['DockerVolumeConfiguration'] = {}
+                    self._process_docker_volume_configuration(e['docker_volume_configuration'], volume['DockerVolumeConfiguration'])
+                if 'host' in e:
+                    volume['Host'] ={}
+                    self._process_host(e['host'],volume['Host'])
+                cfn['Volumes'].append(volume)
+
+    def _process_host(self, item, cfn):
+        self._log_information(key='Host', value=None,ljust=10, indent=4)
+        if 'source_path' in item:
+            cfn['SourcePath'] = self.bind_data(item['source_path'])
+            self._log_information(key='SourcePath', value=cfn['SourcePath'] ,ljust=10, indent=5)
+
+    def _process_docker_volume_configuration(self, item, cfn):
+        self._log_information(key='DockerVolumeConfiguration', value=None,ljust=10, indent=4)
+        if 'autoprovision' in item:
+            cfn['Autoprovision'] = str(item['autoprovision'])
+            self._log_information(key='Autoprovision', value=cfn['Autoprovision'],ljust=10, indent=5)
+        if 'driver' in item:
+            cfn['Driver'] = str(item['driver'])
+            self._log_information(key='Driver', value=cfn['Driver'],ljust=10, indent=5)
+        if 'driver_opts' in item:
+            cfn['DriverOpts']=[]
+            self._log_information(key='DriverOpts', value=None, ljust=10, indent=5)
+            for e in item['driver_opts']:
+                elmt = {}
+                key = None
+                value = None
+                for a in e.keys():
+                    key = a
+                for a in elmt.values():
+                    value = str(a)
+                elmt[key] = value
+                cfn['DriverOpts'].append(elmt)
+                self._log_information(key='- '+key, value=value, ljust=10, indent=6)
+        if 'labels' in item:
+            self._log_information(key='Labels', value=None, ljust=10, indent=5)
+            cfn['Labels']=[]
+            for e in item['labels']:
+                elmt = {}
+                key = None
+                value = None
+                for a in e.keys():
+                    key = a
+                for a in elmt.values():
+                    value = str(a)
+                elmt[key] = self.bind_data(value)
+                cfn['DriverOpts'].append(elmt)
+                self._log_information(key='- '+key, value=value, ljust=10, indent=6)
+        if 'scope' in item:
+            cfn['Scope'] = item['scope']
+            self._log_information(key='Scope', value=cfn['Scope'], ljust=10, indent=5)
+    
+
     def _on_execute(self):
         """operation containing the processing performed by this step"""
         try:
@@ -52,6 +115,7 @@ class PrepareDeploymentTaskDefinitionStep(CanaryReleaseDeployStep):
             self._process_ipc_mode(item, cfn)
             self._process_pid_mode(item,cfn)
             self._process_requires_compatibilities(item, cfn)
+            self._process_volumes(item,cfn)
             self.infos.save()
             return PrepareDeploymentTargetGroupsStep(self.infos, self.logger)         
 

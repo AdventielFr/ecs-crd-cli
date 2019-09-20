@@ -28,15 +28,22 @@ class ScaleUpServiceStep(CanaryReleaseDeployStep):
             if service_arn == None:
                 raise ValueError(f'Service not found')
             self.logger.info('')
-            client.update_service(
-                cluster = self.infos.cluster,
-                service = service_arn,
-                desiredCount = self.infos.scale_infos.desired,
-                deploymentConfiguration={
-                    'maximumPercent': 100 * self.infos.scale_infos.desired,
-                    'minimumHealthyPercent': 100
-                }
-            )
+            if self.infos.scale_infos.desired > 1:
+                client.update_service(
+                    cluster = self.infos.cluster,
+                    service = service_arn,
+                    desiredCount = self.infos.scale_infos.desired,
+                    deploymentConfiguration={
+                        'maximumPercent': 100 * self.infos.scale_infos.desired,
+                        'minimumHealthyPercent': 100
+                    }
+                )
+            else:
+                 client.update_service(
+                    cluster = self.infos.cluster,
+                    service = service_arn,
+                    desiredCount = self.infos.scale_infos.desired
+                )               
             self.wait(self.infos.scale_infos.wait, 'Scaling up in progress')
             self.logger.info('')
             self.logger.info(f'Desired instances : {self.infos.scale_infos.desired}')

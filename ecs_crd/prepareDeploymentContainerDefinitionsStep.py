@@ -214,10 +214,10 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             container['MountPoints'] = []
             for e in item['mount_points']:
                 mount_point = {}
-                mount_point['ContainerPath'] = e['container_path']
+                mount_point['ContainerPath'] = self.bind_data(e['container_path'])
                 self._log_information(
                     key='- Container Path', value=mount_point["ContainerPath"], indent=2)
-                mount_point['SourceVolume'] = e['source_volume']
+                mount_point['SourceVolume'] = self.bind_data(e['source_volume'])
                 self._log_information(
                     key='  Source Volume', value=mount_point["SourceVolume"], indent=2)
                 mount_point['ReadOnly'] = "false"
