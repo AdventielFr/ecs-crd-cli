@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import boto3
 import json
 import time
@@ -8,6 +10,7 @@ from ecs_crd.destroyGreenStackStep import DestroyGreenStackStep
 from ecs_crd.applyStrategyStep import ChangeRoute53WeightsStep
 from ecs_crd.destroyGreenStackStep import DestroyGreenStackStep
 from ecs_crd.defaultJSONEncoder import DefaultJSONEncoder
+
 
 class ScaleUpServiceStep(CanaryReleaseDeployStep):
 
@@ -25,25 +28,24 @@ class ScaleUpServiceStep(CanaryReleaseDeployStep):
             client = boto3.client('ecs', region_name=self.infos.region)
             service_arn = self._find_service_arn(client)
             self.logger.info(f'Service : {service_arn}')
-            if service_arn == None:
+            if not service_arn:
                 raise ValueError(f'Service not found')
             self.logger.info('')
             if self.infos.scale_infos.desired > 1:
                 client.update_service(
-                    cluster = self.infos.cluster,
-                    service = service_arn,
-                    desiredCount = self.infos.scale_infos.desired,
+                    cluster=self.infos.cluster,
+                    service=service_arn,
+                    desiredCount=self.infos.scale_infos.desired,
                     deploymentConfiguration={
                         'maximumPercent': 100 * self.infos.scale_infos.desired,
                         'minimumHealthyPercent': 100
                     }
                 )
             else:
-                 client.update_service(
-                    cluster = self.infos.cluster,
-                    service = service_arn,
-                    desiredCount = self.infos.scale_infos.desired
-                )               
+                client.update_service(
+                    cluster=self.infos.cluster,
+                    service=service_arn,
+                    desiredCount=self.infos.scale_infos.desired)
             self.wait(self.infos.scale_infos.wait, 'Scaling up in progress')
             self.logger.info('')
             self.logger.info(f'Desired instances : {self.infos.scale_infos.desired}')
@@ -61,6 +63,6 @@ class ScaleUpServiceStep(CanaryReleaseDeployStep):
         for item in response['serviceArns']:
             s = []
             s.append(item)
-            response = client.describe_services( cluster = self.infos.cluster, services=s)
+            response = client.describe_services(cluster=self.infos.cluster, services=s)
             if response['services'][0]['serviceName'] == '-'.join([self.infos.service_name, self.infos.green_infos.canary_release]):
                 return response['services'][0]['serviceArn']
