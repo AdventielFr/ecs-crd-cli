@@ -43,8 +43,8 @@ class PrepareDeploymentStrategyStep(CanaryReleaseDeployStep):
         """operation containing the processing performed by this step"""
         try:
             self._process_strategy()
-            #return None
-            return CreateInitStackStep(self.infos, self.logger)
+            #return CreateInitStackStep(self.infos, self.logger)
+            return None
         
         except Exception as e:
             self.infos.exit_code = 1

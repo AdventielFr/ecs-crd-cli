@@ -10,8 +10,6 @@ from ecs_crd.defaultJSONEncoder import DefaultJSONEncoder
 class ScaleInfos:
      def __init__(self, ):
         self.desired = 2
-        self.minimum = 2
-        self.maximum = 2
         self.wait = 60
 
 class StrategyInfos:
