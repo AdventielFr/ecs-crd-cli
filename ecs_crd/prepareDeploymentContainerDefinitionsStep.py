@@ -55,16 +55,15 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             container['PortMappings'] = []
             self._log_information(key='Port mappings', value='', indent=1)
             for p in item['port_mappings']:
-                port_mapping = {}
-                port_mapping['HostPort'] = 0
-                port_mapping['ContainerPort'] = int(p['container_port'])
+                port_mapping = {
+                                'HostPort': 0,
+                                'ContainerPort': int(p['container_port'])
+                                }
                 if 'host_port' in p:
-                    if self.is_int(p['host_port']):
+                    if isinstance(p['host_port'], int):
                         port_mapping['HostPort'] = p['host_port']
-                    else:
-                        if 'green' in p['host_port'] and 'blue' in p['host_port']:
-                            port_mapping['HostPort'] = int(
-                                p['host_port'][self.infos.elected_release])
+                    elif 'green' in p['host_port'] and 'blue' in p['host_port']:
+                        port_mapping['HostPort'] = int(p['host_port'][self.infos.elected_release])
                 protocol = 'tcp'
                 host_port = ''
                 if port_mapping['HostPort'] == 0:
@@ -91,13 +90,11 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
         if 'environment' in item:
             for elmt in item['environment']:
                 e = {}
-                for a in elmt.keys():
-                    e['Name'] = a
-                for a in elmt.values():
-                    e['Value'] = a
-                e['Value'] = self.bind_data(str(e['Value']))
+                for k, v in elmt.items():
+                    e['Name'] = k
+                    e['Value'] = v
+                e['Value'] = self.bind_data(str(v))
                 container['Environment'].append(e)
-
         # ajout variable d'environement par défault
         self._add_default_environment_variable(
             container, 'AWS_ENVIRONMENT', '{{environment}}')
@@ -116,6 +113,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
         if 'secrets' in item:
             self._log_information(key='Secrets', value='', indent=1)
             for elmt in item['secrets']:
+                #TODO A retravailler
                 e = {}
                 for a in elmt.keys():
                     e['Name'] = a
@@ -283,7 +281,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                 self._log_information(
                     key='- ContainerName', value=depends_on['ContainerName'], indent=2)
                 self._log_information(
-                    key='  Condition', value=depends_on['Condition'],indent=2)
+                    key='  Condition', value=depends_on['Condition'], indent=2)
 
     def _on_execute(self):
         """operation containing the processing performed by this step"""
@@ -329,7 +327,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
 
     def _add_default_environment_variable(self, container, key, value):
         """add a new default environment variables if not exists"""
-        if len(list(filter(lambda x: x['Name'] == key, container['Environment']))) == 0:
+        if not any(filter(lambda x: x['Name'] == key, container['Environment'])):
             env = {}
             env['Name'] = key
             env['Value'] = self.bind_data(value)
@@ -347,20 +345,20 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                     j = json.loads(format)
                     o.append(j)
         # no secrets
-        if (len(o) == 0):
+        if not o:
             return None
         # secrets exist
         result = SecretInfos()
         client = boto3.client('secretsmanager', region_name=self.infos.region)
         kmsKeyIds = []
         for item in o:
-            for k in item.keys():
-                secretId = item[k]
+            for k, v in item.items():
+                secretId = v
                 try:
                     response = client.describe_secret(SecretId=secretId)
                     if response['ARN'] not in result.secrets_arn:
                         a = {}
-                        a['id'] = item[k]
+                        a['id'] = v
                         a['arn'] = response['ARN']
                         result.secrets.append(a)
                         result.secrets_arn.append(response['ARN'])
