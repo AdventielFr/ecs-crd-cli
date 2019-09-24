@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import boto3
 import datetime
@@ -5,6 +7,7 @@ import datetime
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.rollbackChangeRoute53WeightsStep import RollbackChangeRoute53WeightsStep
 from ecs_crd.destroyBlueStackStep import DestroyBlueStackStep
+
 
 class UpdateCanaryReleaseInfoStep(CanaryReleaseDeployStep):
 
@@ -15,7 +18,7 @@ class UpdateCanaryReleaseInfoStep(CanaryReleaseDeployStep):
     def _on_execute(self):
         """operation containing the processing performed by this step"""
         try:
-            client = boto3.resource('dynamodb', region_name = self.infos.region)
+            client = boto3.resource('dynamodb', region_name=self.infos.region)
             table = client.Table('canary_release')
             if self.infos.action == 'deploy':
                 if self._exist_item(client, table):
@@ -23,42 +26,32 @@ class UpdateCanaryReleaseInfoStep(CanaryReleaseDeployStep):
                 else:
                     self._insert_item(table)
             if self.infos.action == 'undeploy':
-                self._detele_item(table)
+                self._delete_item(table)
             return DestroyBlueStackStep(self.infos, self.logger)
         except Exception as e:
             self.logger.error('UpdateCanaryReleaseInfoStep', exc_info=True)
             self.infos.exit_exception = e
             self.infos.exit_code = 4
             return RollbackChangeRoute53WeightsStep(self.infos, self.logger)
-            
+
     def _exist_item(self, client, table):
         """check if exist item in dynamoDB table"""
         try:
-            response = table.get_item(
-                Key = {
-                'id' : self.infos.get_hash()
-                }
-            )
-            return True if ( 'Item' in response and len(response['Item'])==0 ) else False
+            response = table.get_item(Key={'id': self.infos.get_hash()})
+            return True if ('Item' in response and not response['Item']) else False
         except client.exceptions.ResourceNotFoundException:
             return False
-        except:
+        except Exception:
             raise
 
-    def _detele_item(self, table):
+    def _delete_item(self, table):
         """delete item in dynamo db table """
-        table.delete_item(
-            Key={
-                'id' : self.infos.get_hash()
-            }
-        )
-   
+        table.delete_item(Key={'id': self.infos.get_hash()})
+
     def _update_item(self, table):
         """update item in dynamo db table """
         table.update_item(
-            Key={
-                'id' : self.infos.get_hash()
-            },
+            Key={'id': self.infos.get_hash()},
             UpdateExpression="set service_version=:v, canary_releaset=:c, alb_arn=:a, deploy_at=:d, stack_name=:s",
             ExpressionAttributeValues={
                 ':v': self.infos.service_version,
