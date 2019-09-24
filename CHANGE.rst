@@ -2,6 +2,13 @@
 CHANGELOG
 =========
 
+0.7.0
+========
+
+Feature:
+
+* finalize add scaling policy feature ( log )
+
 0.5.1
 ========
 

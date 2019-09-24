@@ -44,7 +44,6 @@ class PrepareDeploymentStrategyStep(CanaryReleaseDeployStep):
         try:
             self._process_strategy()
             return CreateInitStackStep(self.infos, self.logger)
-            #return None
         
         except Exception as e:
             self.infos.exit_code = 1
