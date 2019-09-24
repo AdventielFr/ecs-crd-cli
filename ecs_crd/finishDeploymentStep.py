@@ -5,11 +5,12 @@ import datetime
 
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 
+
 class FinishDeploymentStep(CanaryReleaseDeployStep):
-    
+
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        super().__init__(infos, 'Finish deployment', logger,with_end_log = False)
+        super().__init__(infos, 'Finish deployment', logger, with_end_log=False)
 
     def _on_execute(self):
         """operation containing the processing performed by this step"""
@@ -20,4 +21,3 @@ class FinishDeploymentStep(CanaryReleaseDeployStep):
             self.logger.info(f'Exit code   : {self.infos.exit_code}')
             self.logger.info(f'Exit error  : {self.infos.exit_exception}')
         return None
-    
