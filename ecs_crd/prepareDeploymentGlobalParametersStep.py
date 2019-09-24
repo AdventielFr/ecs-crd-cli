@@ -4,7 +4,7 @@ import json
 
 from ecs_crd.canaryReleaseInfos import StrategyInfos
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
-from ecs_crd.prepareDeploymentScaleParametersStep import PrepareDeploymentScaleParametersStep
+from ecs_crd.prepareDeploymentLoadBalancerParametersStep import PrepareDeploymentLoadBalancerParametersStep
 
 class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
     
@@ -109,7 +109,7 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
             self.infos.save()
             self._create_dynamodb_table()
 
-            return PrepareDeploymentScaleParametersStep(self.infos, self.logger)
+            return PrepareDeploymentLoadBalancerParametersStep(self.infos, self.logger)
 
         except Exception as e:
             self.infos.exit_code = 1

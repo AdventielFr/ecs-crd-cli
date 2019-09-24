@@ -4,7 +4,7 @@ from ecs_crd.canaryReleaseInfos import ReleaseInfos
 from ecs_crd.canaryReleaseInfos import LoadBalancerInfos
 from ecs_crd.canaryReleaseInfos import ListenerRuleInfos
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
-from ecs_crd.prepareDeploymentContainerDefinitionsStep import PrepareDeploymentContainerDefinitionsStep
+from ecs_crd.prepareDeploymentScaleParametersStep import PrepareDeploymentScaleParametersStep
 
 class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
     
@@ -91,7 +91,7 @@ class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
             if stack != None:
                 self.infos.init_infos.stack = None
             self.infos.save()
-            return PrepareDeploymentContainerDefinitionsStep(self.infos, self.logger)
+            return PrepareDeploymentScaleParametersStep(self.infos, self.logger)
 
         except Exception as e:
             self.infos.exit_code = 1

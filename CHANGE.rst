@@ -2,13 +2,19 @@
 CHANGELOG
 =========
 
+0.5.0
+========
+
+Feature:
+
+* add scaling policy feature
+
 0.4.0
 ========
 
 Feature:
 
 * add container volume feature for efs
-
 
 0.3.0
 ========
