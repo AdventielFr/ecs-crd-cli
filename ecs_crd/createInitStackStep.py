@@ -1,25 +1,27 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import boto3
 import json
 import time
-import traceback
 
 from ecs_crd.defaultJSONEncoder import DefaultJSONEncoder
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.createGreenStackStep import CreateGreenStackStep
 from ecs_crd.finishDeploymentStep import FinishDeploymentStep
 
+
 class CreateInitStackStep(CanaryReleaseDeployStep):
 
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        super().__init__(infos,'Create Init Cloudformation Stack', logger)
+        super().__init__(infos, 'Create Init Cloudformation Stack', logger)
         self.timer = 5
 
     def _on_execute(self):
         """operation containing the processing performed by this step."""
         try:
             self.logger.info('')
-            self._log_information(key = 'Stack Name', value=self.infos.init_infos.stack_name)
+            self._log_information(key='Stack Name', value=self.infos.init_infos.stack_name)
             self.logger.info('')
             self.logger.info(f'Creating stack in progress ...')
             # create init stack if not exist
@@ -47,15 +49,15 @@ class CreateInitStackStep(CanaryReleaseDeployStep):
             self.logger.info('')
             time.sleep(self.timer)
             self.logger.info(f'Creating stack in progress ... [{w} elapsed]')
-            response = client.describe_stacks(StackName = self.infos.init_infos.stack_id)
+            response = client.describe_stacks(StackName=self.infos.init_infos.stack_id)
             stack = response['Stacks'][0]
-            response2 = client.list_stack_resources(StackName = self.infos.init_infos.stack_id)
+            response2 = client.list_stack_resources(StackName=self.infos.init_infos.stack_id)
             for resource in response2['StackResourceSummaries']:
-                message = resource['LogicalResourceId'].ljust(40,'.')+resource['ResourceStatus']
+                message = resource['LogicalResourceId'].ljust(40, '.') + resource['ResourceStatus']
                 if 'ResourceStatusReason'in resource:
                     message += f' ( {resource["ResourceStatusReason"]} )'
                 self.logger.info(message)
-                    
+
             if stack['StackStatus'] == 'CREATE_IN_PROGRESS':
                 continue
             else:
