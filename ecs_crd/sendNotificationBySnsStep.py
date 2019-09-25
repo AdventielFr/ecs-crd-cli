@@ -38,7 +38,7 @@ class SendNotificationBySnsStep(CanaryReleaseDeployStep):
             message +=f'\nExit Code      : {self.infos.exit_code}'
             message +=f'\nMessage        : {self.infos.exit_exception}'
             subject = ('[SUCCESS]' if self.infos.exit_code == 0 else ['FAIL']) + f' {self.infos.action} - {self.infos.service_name}' 
-            client = boto3.client('sns')
+            client = boto3.client('sns', region_name=self.infos.region)
             self._log_information(key='Sending Notification ... ', value=None)
             try:
                 response = client.publish(
