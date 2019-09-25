@@ -6,18 +6,10 @@ from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.rollbackChangeRoute53WeightsStep import RollbackChangeRoute53WeightsStep
 from ecs_crd.updateCanaryReleaseInfoStep import UpdateCanaryReleaseInfoStep
 
-#Pourquoi instancier logger à chaque fois?
-#Attention pas de CamelCase en python donc va former les gens chez AWS :)
-#Inutile d'aller surcharger __init__ avec des constantes
-#Eviter au possible les exceptions super généralistes
-
-
 class ChangeRoute53WeightsStep(CanaryReleaseDeployStep):
 
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        self._nb_max_initial_test = 3
-        self._nb_initial_test = 0
         super().__init__(infos, 'Change Route 53 Weights', logger)
 
     def _on_execute(self):
@@ -104,7 +96,7 @@ class CheckGreenHealthStep(CanaryReleaseDeployStep):
 
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        self._nb_max_initial_test = 3
+        self._nb_max_initial_test = 4
         self._nb_initial_test = 1
         super().__init__(infos, 'Check Health Green LoadBalancer', logger)
 
@@ -112,36 +104,37 @@ class CheckGreenHealthStep(CanaryReleaseDeployStep):
         """return list of state of health check load balancer"""
         result = []
         client = boto3.client('elbv2', region_name=self.infos.region)
-        targetGroupArns = self._find_target_group_arns(client)
+        targetGroupArns = self._find_target_group_arns()
         for e in targetGroupArns:
-            response = client.describe_target_health(TargetGroupArn=e)
+            response = client.describe_target_health(TargetGroupArn=e['OutputValue'])
             state = "UNKNOWN"
             if response['TargetHealthDescriptions']:
                 state = response['TargetHealthDescriptions'][0]['TargetHealth']['State'].upper()
-            self._log_information(key='Target Group', value='')
-            self._log_information(key='ARN', value=e, indent=1)
+            self._log_information(key='Target Group', value=e['OutputKey'][:-3])
+            self._log_information(key='ARN', value=e['OutputValue'], indent=1)
             self._log_information(key='State', value=state, indent=1)
+            self.logger.info('')
             result.append(state)
         return result
 
-    def _is_all_full_state(self, health_checks, states):
+    def _is_all_full_states(self, health_checks, states):
         if not states:
             return False
-        return all(filter(lambda x: x in states, health_checks))
+        return len(list(filter(lambda x: x in states, health_checks))) == len(health_checks)
 
     def _on_execute(self):
         """operation containing the processing performed by this step"""
         try:
             while True:
                 health_checks = self._find_health_checks()
-                is_full_healthy = self._is_all_full_state(health_checks, ['HEALTHY'])
+                is_full_healthy = self._is_all_full_states(health_checks, ['HEALTHY'])
                 if is_full_healthy:
                     break
-                is_healthy_and_initial = self._is_all_full_state(health_checks, ['HEALTHY', 'INITIAL'])
+                is_healthy_and_initial = self._is_all_full_states(health_checks, ['HEALTHY', 'INITIAL'])
                 if is_healthy_and_initial:
                     if self._nb_initial_test < self._nb_max_initial_test:
+                        self.wait(15, f'Waiting for service start ( Number of attempts {self._nb_initial_test}/{self._nb_max_initial_test}) ...')
                         self._nb_initial_test += 1
-                        self.wait(20, 'Changing DNS Weights ...')
                         continue
                 raise ValueError(f'Invalid state for Green TargetGroup')
             # all health check is ok
@@ -156,38 +149,8 @@ class CheckGreenHealthStep(CanaryReleaseDeployStep):
             self.infos.exit_code = 6
             return RollbackChangeRoute53WeightsStep(self.infos, self.logger)
 
-    def _find_target_group_arns(self, client):
-        """find all target group's ARN of the canary release"""
-        target_groups = []
-        result = []
-
-        # find target groups'names
-        for k, v in self.infos.green_infos.stack['Resources'].items():
-            v_type = v['Type']
-            hc_enabled = v['Properties']['HealthCheckEnabled']
-            if v_type.endswith('TargetGroup') and f"{hc_enabled.lower()}" == 'true':
-                target_groups.append(v['Properties']['Name'])
-
-        # find target group's arns
-        if not self.infos.listener_rules_infos:
-            response = client.describe_listeners(LoadBalancerArn=self.infos.green_infos.alb_arn)
-            for item in response['Listeners']:
-                defaut_action = item['DefaultActions'][0]
-                if defaut_action['Type'] == 'forward':
-                    arns = []
-                    arns.append(defaut_action['TargetGroupArn'])
-                    response = client.describe_target_groups(TargetGroupArns=arns)
-                    if 'TargetGroups' in response:
-                        target_group = response['TargetGroups'][0]
-                        if target_group['TargetGroupName'] in target_groups:
-                            result.append(target_group['TargetGroupArn'])
-        else:
-            for item in self.infos.listener_rules_infos:
-                response = client.describe_rules(ListenerArn=item.listener_arn)
-                for rule in response['Rules']:
-                    if str(rule['Priority']) == str(item.configuration['rule']['priority']):
-                        for action in rule['Actions']:
-                            if action['Type'] == 'forward':
-                                result.append(action['TargetGroupArn'])
-
-        return result
+    def _find_target_group_arns(self):
+        client = boto3.client('cloudformation', region_name=self.infos.region)
+        response = client.describe_stacks(StackName= self.infos.green_infos.stack_name)
+        return  filter(lambda x: x['OutputKey'].startswith('TargetGroup'),response['Stacks'][0]['Outputs'])
+        

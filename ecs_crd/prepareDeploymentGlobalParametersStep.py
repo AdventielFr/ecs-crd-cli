@@ -180,6 +180,8 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
         data = None
         try:
             data = json.loads(urllib.request.urlopen("http://ip.jsontest.com/").read())
+            if 'ip' in data:
+                return data['ip']
         except Exception:
             pass
         return data

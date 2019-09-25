@@ -213,6 +213,9 @@ class PrepareDeploymentTargetGroupsStep(CanaryReleaseDeployStep):
                 self.infos.green_infos.stack['Resources'][item['TargetGroupArn']
                                                           ['Ref']] = target_group
 
+                # add result output
+                self._add_to_output_cloud_formation(item['TargetGroupArn']['Ref'])
+
             self.infos.save()
 
             return PrepareDeploymentListenersStep(self.infos, self.logger)
@@ -223,6 +226,14 @@ class PrepareDeploymentTargetGroupsStep(CanaryReleaseDeployStep):
             self.logger.error(self.title, exc_info=True)
         else:
             return None
+
+    def _add_to_output_cloud_formation(self, target_group_name):
+        output = self.infos.green_infos.stack['Outputs']
+        id = target_group_name+'Arn'
+        output[id] = {}
+        output[id]['Description']=f'The ARN of {target_group_name}'
+        output[id]['Value']={}
+        output[id]['Value']['Ref'] = target_group_name
 
     def _find_host_port(self, container_name, container_port):
         """find the host port for tuple container name/ container port """

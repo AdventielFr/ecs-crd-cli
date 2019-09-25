@@ -104,6 +104,21 @@ The "canary" tag contains the definition of the deployment strategy.
 
 ```yaml
 canary:
+  group: string
+  releases:
+    blue: string
+    green: string
+  scale:
+    wait: integer
+  strategy:
+    - weight: integer
+      wait: integer
+```
+
+example,
+
+```yaml
+canary:
   group: private
   releases:
     blue: 1
@@ -229,16 +244,22 @@ service:
   version: string
   scheduling_strategy: string
   platform_version: string
-  placement_constraints: ...
-  placement_strategies: ...
+  placement_constraints:
+    - [Placement Constraints Tag Definition]
+  placement_strategies:
+    - [Placement Strategy Tag Definition]
   requires_compatibilities: string
   containers:
-    - container_tag_definition
+    - [Container Tag Definition]
   cpu: integer
   memory: integer
   ipc_mode: string
   network_mode: string
-  iam_roles: iam_role_tag_definition
+  iam_roles: [IAM Role Tag Definition]
+  auto_scaling: [Auto Scaling Tag Definition]
+  volumes:
+    - [Volume Tag Definition]
+
 ```
 
 #### V.2.1 - [service].**project**
@@ -301,7 +322,7 @@ service:
 
 &nbsp;&nbsp;**description** : An array of placement constraint objects to use for tasks in your service. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html#cfn-ecs-service-placementconstraints)
 
-&nbsp;&nbsp;**type** : list of placement constraint tag definition ( see V.5 - Placement constraint tag definition )
+&nbsp;&nbsp;**type** : list of placement constraint tag definition ( see V.5 - Placement Constraint Tag Definition )
 
 &nbsp;&nbsp;**required** : no
 
@@ -309,13 +330,13 @@ service:
 
 &nbsp;&nbsp;**description** : The placement strategy objects to use for tasks in your service. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html#cfn-ecs-service-placementstrategies)
 
-&nbsp;&nbsp;**required** :  list of placement strategy tag definition ( see V.6 - Placement strategy tag definition )
+&nbsp;&nbsp;**required** :  list of placement strategy tag definition ( see V.6 - Placement Strategy Tag Definition )
 
 #### V.2.10 - [service].containers
 
-&nbsp;&nbsp;**description** : The list of container defintitions. For more information see ( container tag definition V.3 )
+&nbsp;&nbsp;**description** : The list of container defintitions. For more information see ( Container Tag definition V.3 )
 
-&nbsp;&nbsp;**type** : list of container tag definitions  ( see  V.3 - Container tag definition )
+&nbsp;&nbsp;**type** : list of container tag definitions  ( see  V.3 - Container Tag definition )
 
 &nbsp;&nbsp;**required** : yes
 
@@ -341,7 +362,7 @@ service:
 
 &nbsp;&nbsp;**description** : The amount (in MiB) of memory used by the task. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html#cfn-ecs-taskdefinition-memory)
 
-&nbsp;&nbsp;**type** : int
+&nbsp;&nbsp;**type** : integer
 
 &nbsp;&nbsp;**required** : no
 
@@ -377,40 +398,68 @@ service:
 
 &nbsp;&nbsp;**description** : Contains the list of iam policies to apply on the service when it starts and when it is running
 
-&nbsp;&nbsp;**type** : iam role tag definition ( see V.7 - IAM roles tag definition )
+&nbsp;&nbsp;**type** : iam role tag definition ( see V.7 - IAM Roles Tag definition )
 
 &nbsp;&nbsp;**required** : no
 
-### V.3 - Container tag definition ( ContainerTagDefinition )
+#### V.2.15 - [service].auto_scaling
+
+&nbsp;&nbsp;**description** : Contains the triggered cloudwatch alert service scaling strategy.
+
+&nbsp;&nbsp;**type** : auto scaling service tag definition ( see V.9 - Auto Scaling Service Tag Definition )
+
+&nbsp;&nbsp;**required** : no
+
+#### V.2.15 - [service].volumes
+
+&nbsp;&nbsp;**description** : The list of volume definitions for the task.For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html#cfn-ecs-taskdefinition-volumes)
+
+&nbsp;&nbsp;**type** : volume service tag definition ( see V.9 - Auto Scaling Service Tag Definition )
+
+&nbsp;&nbsp;**required** : no
+
+### V.3 - Container Tag Definition
 
 The "container" tag contains the definition of containers to deploy. The definition is very similar to the statement of an ECS task definition by AWS cloud formation
 
 ```yaml
-service:
-  containers:
-    - name: string
-      image: string
-      cpu: integer
-      memory: integer
-      memory_reservation: integer
-      port_mappings:
-        - port_mapping_tag_definition
-      entry_point:
-        - string
-      environment:
-        - key_pair
-      command:
-        - string
-      dns_search_domains:
-        - string
-      disable_networking: boolean
-      secrets:
-        - string
+name: string
+image: string
+cpu: integer
+memory: integer
+memory_reservation: integer
+port_mappings:
+  - [Container Port Mapping Tag Definition]
+entry_point:
+  - string
+environment:
+  - key pair
+command:
+  - string
+dns_search_domains:
+  - string
+disable_networking: boolean
+dns_servers:
+  - string
+docker_security_options:
+  - string
+disable_networking: boolean
+esssential: boolean
+links:
+  - string
+privileged: boolean
+hostname: string
+start_timeout: integer
+stop_timeout: interger
+mount_points:
+  - [Container Mount Point Tag Definition]
+secrets:
+  - string
 ```
 
 #### V.3.1 - [container].name
 
-&nbsp;&nbsp;**description** : The name of container in the service.
+&nbsp;&nbsp;**description** : The name of container in the service.If the value is not filled in, the value will be "default".
 
 &nbsp;&nbsp;**type** : string
 
@@ -482,7 +531,7 @@ with,
 
 &nbsp;&nbsp;**required** : no
 
-&nbsp;&nbsp;**type** : list of port mapping tags ( see V.4 - Container Port mapping tag definition )
+&nbsp;&nbsp;**type** : list of port mapping tags ( see V.4 - Container Port Mapping Tag definition )
 
 #### V.3.8 - [container].entry_point
 
@@ -566,21 +615,22 @@ with,
 
 &nbsp;&nbsp;**type** :  boolean
 
-#### V.4 - Container Port mapping tag definition ( port_mappings_tag_definition )
+#### V.4 - Container Port mapping tag definition
 
 For more informations [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ecs-taskdefinition-containerdefinitions-portmappings.html)
 
 ```yaml
-service:
-  containers:
-    - name: nginx
-      port_mappings:
-        - container_port: integer
-          host_port: integer
-        - container_port: integer
-          host_port:
-            blue: integer
-            green: integer
+container_port: integer
+host_port: integer
+```
+
+or 
+
+```yaml
+container_port: integer
+host_port: integer
+  blue: integer
+  green: integer
 ```
 
 ##### V.4.1 - [port_mappings].container_port
@@ -643,13 +693,20 @@ service:
 
 &nbsp;&nbsp;**default** : tcp
 
-### V.5 - Placement constrains tag definition
+### V.5 - Placement Constrains Tag Definition
+
+```yaml
+expression: string
+type: string
+```
+
+example,
 
 ```yaml
 service:
   placement_constraints:
-    - expression: "attribute:ecs.instance-type == t2.small"
-    - type: "memberOf"
+    expression: "attribute:ecs.instance-type == t2.small"
+    type: "memberOf"
 ```
 
 The PlacementConstraint property specifies an object representing a constraint on task placement in the task definition.
@@ -672,9 +729,23 @@ The PlacementConstraint property specifies an object representing a constraint o
 
 &nbsp;&nbsp;**allowed values** : distinctInstance | memberOf
 
-### V.6 - Placement strategies tag definition
+### V.6 - Placement Strategy Tag Definition
 
 The placement strategy objects to use for tasks in your service.
+
+```yaml
+expression: field
+type: string
+```
+
+example,
+
+```yaml
+service:
+  placement_constraints:
+    expression: "attribute:ecs.instance-type == t2.small"
+    type: "memberOf"
+```
 
 #### V.6.1 -  [placement_stategies].field
 
@@ -692,7 +763,7 @@ The placement strategy objects to use for tasks in your service.
 
 &nbsp;&nbsp;**type** : string
 
-### V.7 - IAM role tag definition
+### V.7 - IAM Role Tag Definition
 
 Contains the list of iam policies to apply on the service when it starts and when it is running
 
@@ -700,9 +771,9 @@ Contains the list of iam policies to apply on the service when it starts and whe
 service:
   iam_roles:
     task_execution_role:
-      - iam_policy_tag_definition
+      - [IAM Policy Tag Definition]
     task_role: 
-      - iam_policy_tag_definition
+      - [IAM Policy Tag Definition]
 ```
 
 #### V.7.1  - [iam_roles].task_execution_role
@@ -755,7 +826,16 @@ service:
           - "sqs:DeleteMessageBatch"
 ```
 
-### V.8 - IAM policy tag definition ( iam_policy_tag_definition )
+### V.8 - IAM Policy Tag Definition
+
+```yaml
+name: string
+effect: string
+resources:
+  - string
+actions:
+  -string
+```
 
 #### V.8.1  - [policy].name
 
@@ -791,4 +871,4 @@ service:
 
 &nbsp;&nbsp;**type** : list of string
 
-#### V.9  - targ
+#### V.9  - Auto Scaling Service Tag Definition

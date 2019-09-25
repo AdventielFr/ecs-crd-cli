@@ -48,7 +48,6 @@ class ReleaseInfos(InitInfos):
         self.alb_hosted_zone_id = None
         self.canary_release = None
 
-
 class LoadBalancerInfos:
     def __init__(self, arn, dns_name, canary_release, hosted_zone_id):
         self.arn = arn
