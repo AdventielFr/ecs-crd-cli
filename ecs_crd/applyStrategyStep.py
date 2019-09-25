@@ -1,19 +1,15 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import boto3
-import time
-import json
-import traceback
 
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.rollbackChangeRoute53WeightsStep import RollbackChangeRoute53WeightsStep
 from ecs_crd.updateCanaryReleaseInfoStep import UpdateCanaryReleaseInfoStep
-from ecs_crd.defaultJSONEncoder import DefaultJSONEncoder
 
 class ChangeRoute53WeightsStep(CanaryReleaseDeployStep):
-    
+
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        self._nb_max_initial_test = 3
-        self._nb_initial_test = 0
         super().__init__(infos, 'Change Route 53 Weights', logger)
 
     def _on_execute(self):
@@ -28,51 +24,49 @@ class ChangeRoute53WeightsStep(CanaryReleaseDeployStep):
             self.infos.exit_code = 5
             return RollbackChangeRoute53WeightsStep(self.infos, self.logger)
 
-
     def _change_weights(self, strategy):
-        """change weight beetween blue DNS and green DNS"""
+        """update balancing ratio beetween blue's and green's DNS"""
         client = boto3.client('route53')
         # by default 100 % for green / 0% for blue
-        green_weight = 100
-        blue_weight = 0
+        green_weight, blue_weight = (100, 0)
         # if exist canary strategy , set weights
-        if strategy != None:
+        if (strategy):
             green_weight = strategy.weight
             blue_weight = 100 - green_weight
 
         self.logger.info('')
-        self._log_information(key='DNS weight blue',value =str(blue_weight)+'%')
-        self._log_information(key='DNS weight green',value =str(green_weight)+'%')
+        self._log_information(key='DNS weight blue', value=f"{blue_weight}%")
+        self._log_information(key='DNS weight green', value=f"{green_weight}%")
         self.logger.info('')
 
         client.change_resource_record_sets(
-            HostedZoneId = self.infos.hosted_zone_id,
+            HostedZoneId=self.infos.hosted_zone_id,
             ChangeBatch={
                 'Comment': 'Alter Route53 records sets for canary blue-green deployment',
                 'Changes': [
                     {
                         'Action': 'UPSERT',
                         'ResourceRecordSet': {
-                            'Name': self.infos.fqdn + '.',
+                            'Name': f"{self.infos.fqdn}.",
                             'Type': 'CNAME',
                             'SetIdentifier': self.infos.blue_infos.canary_release,
                             'Weight': blue_weight,
-                            'TTL' : 60,
+                            'TTL': 60,
                             'ResourceRecords': [
                                 {
                                     'Value': self.infos.blue_infos.alb_dns
                                 },
                             ]
-                        }, 
+                        },
                     },
                     {
                         'Action': 'UPSERT',
                         'ResourceRecordSet': {
-                            'Name': self.infos.fqdn + '.',
+                            'Name': f"{self.infos.fqdn}.",
                             'Type': 'CNAME',
                             'SetIdentifier': self.infos.green_infos.canary_release,
                             'Weight': green_weight,
-                            'TTL' : 60,
+                            'TTL': 60,
                             'ResourceRecords': [
                                 {
                                     'Value': self.infos.green_infos.alb_dns
@@ -85,111 +79,78 @@ class ChangeRoute53WeightsStep(CanaryReleaseDeployStep):
         )
         if (green_weight == 100):
             self.infos.strategy_infos.clear()
-        self.wait(strategy.wait, 'Change DNS Weights in progress')
+        self.wait(strategy.wait, "Changing DNS's Weights")
 
     def _consume_strategy(self):
-        """consume the first strategy of the canary release definition"""
+        """consume the first strategy of the canary release's definition"""
         result = None
-        if len(self.infos.strategy_infos) > 0:
-            tmp = []
-            for i in range(0, len(self.infos.strategy_infos)):
-                if i == 0:
-                    result = self.infos.strategy_infos[i]
-                else:
-                    tmp.append(self.infos.strategy_infos[i])
+        if self.infos.strategy_infos:
+            result, tmp = (self.infos.strategy_infos[0],
+                           self.infos.strategy_infos[1:])
             self.infos.strategy_infos = tmp
         return result
 
+
 class CheckGreenHealthStep(CanaryReleaseDeployStep):
-    
+    """ Check health status of Green's """
+
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        self._nb_max_initial_test = 3
+        self._nb_max_initial_test = 4
         self._nb_initial_test = 1
         super().__init__(infos, 'Check Health Green LoadBalancer', logger)
 
     def _find_health_checks(self):
         """return list of state of health check load balancer"""
-        result =[]
+        result = []
         client = boto3.client('elbv2', region_name=self.infos.region)
-        targetGroupArns = self._find_target_group_arns(client)
+        targetGroupArns = self._find_target_group_arns()
         for e in targetGroupArns:
-            response = client.describe_target_health(TargetGroupArn=e)
+            response = client.describe_target_health(TargetGroupArn=e['OutputValue'])
             state = "UNKNOWN"
-            if len(response['TargetHealthDescriptions']) > 0:
+            if response['TargetHealthDescriptions']:
                 state = response['TargetHealthDescriptions'][0]['TargetHealth']['State'].upper()
-            self._log_information(key='Target Group',value ='')
-            self._log_information(key='ARN',value =e, indent=1)
-            self._log_information(key='State',value =state, indent=1)
+            self._log_information(key='Target Group', value=e['OutputKey'][:-3])
+            self._log_information(key='ARN', value=e['OutputValue'], indent=1)
+            self._log_information(key='State', value=state, indent=1)
+            self.logger.info('')
             result.append(state)
         return result
 
-    def _is_all_full_state(self, health_checks, states):
-        if len(states) == 0:
+    def _is_all_full_states(self, health_checks, states):
+        if not states:
             return False
-        count = sum(1 for e in health_checks if e in states)
-        return len(health_checks) == count   
+        return len(list(filter(lambda x: x in states, health_checks))) == len(health_checks)
 
     def _on_execute(self):
         """operation containing the processing performed by this step"""
         try:
             while True:
                 health_checks = self._find_health_checks()
-                is_full_healthy = self._is_all_full_state(health_checks, ['HEALTHY'])
+                is_full_healthy = self._is_all_full_states(health_checks, ['HEALTHY'])
                 if is_full_healthy:
                     break
-                is_healthy_and_initial = self._is_all_full_state(health_checks,['HEALTHY','INITIAL'])
+                is_healthy_and_initial = self._is_all_full_states(health_checks, ['HEALTHY', 'INITIAL'])
                 if is_healthy_and_initial:
                     if self._nb_initial_test < self._nb_max_initial_test:
-                        self._nb_initial_test = self._nb_initial_test + 1
-                        self.wait(20, 'Change DNS Weights in progress')
+                        self.wait(15, f'Waiting for service start ( Number of attempts {self._nb_initial_test}/{self._nb_max_initial_test}) ...')
+                        self._nb_initial_test += 1
                         continue
                 raise ValueError(f'Invalid state for Green TargetGroup')
             # all health check is ok
-            if len(self.infos.strategy_infos) > 0:
+            if self.infos.strategy_infos:
                 return ChangeRoute53WeightsStep(self.infos, self.logger)
             else:
                 return UpdateCanaryReleaseInfoStep(self.infos, self.logger)
-                
+
         except Exception as e:
             self.logger.error('CheckGreenHealthStep', exc_info=True)
             self.infos.exit_exception = e
             self.infos.exit_code = 6
             return RollbackChangeRoute53WeightsStep(self.infos, self.logger)
-    
-    def _find_target_group_arns(self, client):
-        """find all target group arn of the canary release"""
-        target_groups = []
-        result = []
-        # find names of target groups
-        for e in self.infos.green_infos.stack['Resources'].keys():
-            v = self.infos.green_infos.stack['Resources'][e]
-            if v['Type'].endswith('TargetGroup'):
-                 if str(v['Properties']['HealthCheckEnabled']).lower() == 'true':
-                    target_groups.append(v['Properties']['Name'])
+
+    def _find_target_group_arns(self):
+        client = boto3.client('cloudformation', region_name=self.infos.region)
+        response = client.describe_stacks(StackName= self.infos.green_infos.stack_name)
+        return  filter(lambda x: x['OutputKey'].startswith('TargetGroup'),response['Stacks'][0]['Outputs'])
         
-        # find arns of target groups
-        if len(self.infos.listener_rules_infos) == 0 :
-            response = client.describe_listeners(LoadBalancerArn=self.infos.green_infos.alb_arn)
-            for item in response['Listeners']:
-                defaut_action = item['DefaultActions'][0]
-                if defaut_action['Type'] == 'forward':
-                    arns = []
-                    arns.append(defaut_action['TargetGroupArn'])
-                    response = client.describe_target_groups(TargetGroupArns=arns)
-                    if 'TargetGroups' in response:
-                        target_group = response['TargetGroups'][0]
-                        if target_group['TargetGroupName'] in target_groups:
-                            result.append(target_group['TargetGroupArn'])
-        else:
-            for item in self.infos.listener_rules_infos:
-                response = client.describe_rules(ListenerArn = item.listener_arn)
-                for rule in response['Rules']:
-                    if str(rule['Priority']) == str(item.configuration['rule']['priority']):
-                        for action in rule['Actions']:
-                            if action['Type'] == 'forward':
-                                result.append(action['TargetGroupArn'])
-
-        return result
-
-

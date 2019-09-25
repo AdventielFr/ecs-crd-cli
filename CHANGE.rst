@@ -2,6 +2,14 @@
 CHANGELOG
 =========
 
+0.8.0
+========
+
+Fix:
+
+* change to find service ARN and TargetGroupArn
+
+
 0.7.0
 ========
 

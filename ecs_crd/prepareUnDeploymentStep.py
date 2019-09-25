@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import boto3
 import urllib.request
 import json
@@ -27,7 +30,7 @@ class PrepareUnDeploymentStep(CanaryReleaseDeployStep):
         # canary group
         self.infos.canary_group = self.configuration['canary']['group']
         self.logger.info(f' Canary group : {self.infos.canary_group}')
-        
+
         # project
         self.infos.project = self.configuration['service']['project']
         self.logger.info(f' Project  : {self.infos.project}')
@@ -42,13 +45,13 @@ class PrepareUnDeploymentStep(CanaryReleaseDeployStep):
 
         item = self._find_exist_dynamodb_item()
         self.infos.blue_infos = ReleaseInfos()
-        if item != None:
+        if item:
             blue_stack = self._find_cloud_formation_stack(item['stack_name'])
-            if blue_stack != None:
+            if blue_stack:
                 self.infos.blue_infos.stack_id = blue_stack['StackId']
         self.logger.info(' Blue Stack : {}'.format(self.infos.blue_infos.stack_id))
         init_stack = self._find_cloud_formation_stack(f'{self.infos.environment}-{self.infos.service_name}-0')
-        if init_stack != None:
+        if init_stack:
             self.infos.init_infos = ReleaseInfos()
             self.infos.init_infos.stack_id = init_stack['StackId']
         self.logger.info(' Init Stack : {}'.format(self.infos.init_infos.stack_id))
@@ -56,35 +59,29 @@ class PrepareUnDeploymentStep(CanaryReleaseDeployStep):
         self.infos.save()
 
         return UpdateCanaryReleaseInfoStep(self.infos, self.logger)
- 
-    #----------------------------------------------------
-    #
-    #----------------------------------------------------
+
     def _find_cloud_formation_stack(self, stack_name):
-        client = boto3.client('cloudformation', region_name = self.infos.region)
-        response = client.list_stacks(StackStatusFilter = ['CREATE_COMPLETE'])
+        client = boto3.client('cloudformation', region_name=self.infos.region)
+        response = client.list_stacks(StackStatusFilter=['CREATE_COMPLETE'])
         count = sum(1 for e in response['StackSummaries'] if e['StackName'] == stack_name)
-        if (count == 0):
+        if count == 0:
             return None
-        response = client.describe_stacks(StackName = stack_name)
+        response = client.describe_stacks(StackName=stack_name)
         if len(response['Stacks']) == 1:
             return response['Stacks'][0]
         else:
             return None
 
     def _find_exist_dynamodb_item(self):
-        client = boto3.resource('dynamodb', region_name = self.infos.region)
+        client = boto3.resource('dynamodb', region_name=self.infos.region)
+        result = None
         try:
             table = client.Table('canary_release')
-            response = table.get_item(
-                Key = {
-                'id' : self.infos.get_hash()
-                }
-            )
+            response = table.get_item(Key={'id': self.infos.get_hash()})
             if 'Item' in response:
-                return response['Item']
-            return None
+                result = response['Item']
         except client.exceptions.ResourceNotFoundException:
-            return None
+            pass
         except:
             raise
+        return result

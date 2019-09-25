@@ -152,5 +152,11 @@
                 "LoadBalancers": []
             }
         }
+    },
+    "Outputs": {
+        "ServiceArn":{
+            "Description": "The ARN of the ECS service",
+            "Value" : { "Ref" : "Service"}
+        }
     }
 }
