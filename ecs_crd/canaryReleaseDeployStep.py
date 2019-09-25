@@ -35,7 +35,7 @@ class CanaryReleaseDeployStep(ABC):
     def _log_information(self, key, value, ljust = None, indent=0):
         if ljust == None:
             ljust = len(key)
-        data = "{}{} {} {}".format(''.ljust(indent),key.ljust(ljust), ':' if value != None else '', '' if value == None else value)
+        data = "{}{}{} {}".format(''.ljust(indent),key.ljust(ljust), ':' if value != None else '', '' if value == None else value)
         self.logger.info(data)
     
     def _log_end(self):
