@@ -197,16 +197,32 @@ class PrepareDeploymentScaleParametersStep(CanaryReleaseDeployStep):
         alarm_action = {}
         alarm_action['Ref'] = 'AutoScalingPolicy'
         properties['AlarmActions'].append(alarm_action)
-        properties['Dimensions'] = []
-        dimension = {}
-        dimension['Name'] = 'ServiceName'
-        dimension['Value'] = f'{self.infos.service_name}-{self.infos.green_infos.canary_release}'
-        properties['Dimensions'].append(dimension)
-        dimension = {}
-        dimension['Name'] = 'ClusterName'
-        dimension['Value'] = f'{self.infos.cluster_name}'
-        properties['Dimensions'].append(dimension)
-        properties['ComparisonOperator'] = 'GreaterThanOrEqualToThreshold'
+        
+        dimensions = []
+        if 'dimensions' in alarm:
+            for item in alarms['dimensions']:
+                dimension = {}
+                dimension['Name'] = item['name']
+                dimension['Value'] = item['Value']
+                dimensions.append(dimension)
+        else:
+            dimension = {}
+            dimension['Name'] = 'ServiceName'
+            dimension['Value'] = f'{self.infos.service_name}-{self.infos.green_infos.canary_release}'
+            dimensions.append(dimension)
+            dimension = {}
+            dimension['Name'] = 'ClusterName'
+            dimension['Value'] = f'{self.infos.cluster_name}'
+            dimensions.append(dimension)
+
+        properties['Dimensions'] = dimensions
+        self._log_information(key = '  Dimensions', value='', indent=3)
+        for d in properties['Dimensions']:
+            self._log_information(key = '  - Name', value=d['Name'], indent=4)
+            self._log_information(key = '    Value', value=d['Value'], indent=4)
+
+        properties['ComparisonOperator'] = alarm['comparison_operator']
+        self._log_information(key = '  ComparisonOperator', value=properties['ComparisonOperator'], indent=3)
         cfn['Properties'] = properties
         cfn['DependsOn'] = 'AutoScalingPolicy'
         self.infos.green_infos.stack['Resources'][f'AutoScalingAlarm{count}'] = cfn

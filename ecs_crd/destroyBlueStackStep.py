@@ -51,7 +51,7 @@ class DestroyBlueStackStep(CanaryReleaseDeployStep):
             stack = response['Stacks'][0]
             response2 = client.list_stack_resources(StackName=self.infos.blue_infos.stack_id)
             for resource in response2['StackResourceSummaries']:
-                message = '  '+resource['LogicalResourceId'].ljust(40, '.') + resource['ResourceStatus']
+                message = resource['LogicalResourceId'].ljust(40,'.')+resource['ResourceStatus']
                 if 'ResourceStatusReason'in resource:
                     message += f' ( {resource["ResourceStatusReason"]} )'
                 self.logger.info(message)

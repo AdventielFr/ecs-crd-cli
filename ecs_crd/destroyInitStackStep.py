@@ -23,6 +23,7 @@ class DestroyInitStackStep(CanaryReleaseDeployStep):
                 client = boto3.client('cloudformation', region_name=self.infos.region)
                 self._destroy_stack(client)
                 self._monitor(client)
+                self.logger.info(f'Go to AWS route53 and delete RecordSetGroup {self.infos.fqdn} to finish.')
             else:
                 self.logger.info('Not destruction stack (reason: the stack not exist).')
         except Exception as e:
