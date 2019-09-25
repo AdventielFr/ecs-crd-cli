@@ -1,64 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import boto3
-import time
 
-from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
-from ecs_crd.finishDeploymentStep import FinishDeploymentStep
+from ecs_crd.sendNotificationBySnsStep import SendNotificationBySnsStep
 from ecs_crd.destroyInitStackStep import DestroyInitStackStep
+from ecs_crd.destroyStackStep import DestroyStackStep
 
-
-class DestroyBlueStackStep(CanaryReleaseDeployStep):
+class DestroyBlueStackStep(DestroyStackStep):
 
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        self.timer = 5
-        super().__init__(infos, 'Delete Blue Cloudformation Stack', logger)
+        super().__init__(
+            infos, 
+            'Delete Blue Cloudformation Stack', 
+            logger,
+            infos.blue_infos
+        )
 
-    def _on_execute(self):
-        """operation containing the processing performed by this step."""
-        try:
-            if self.infos.blue_infos.stack_id:
-                client = boto3.client(
-                    'cloudformation', region_name=self.infos.region)
-                self._destroy_stack(client)
-                self._monitor(client)
-            else:
-                self.logger.info("Cannot destroy stack (reason: it doesn't exist.")
-            if self.infos.action == 'deploy':
-                return FinishDeploymentStep(self.infos, self.logger)
-            else:
-                return DestroyInitStackStep(self.infos, self.logger)
-        except Exception as e:
-            self.infos.exit_exception = e
-            self.infos.exit_code = 7
-            return FinishDeploymentStep(self.infos, self.logger)
-
-    def _destroy_stack(self, client):
-        """destroys the cloud formation stack"""
-        client.delete_stack(StackName=self.infos.blue_infos.stack_id)
-
-    def _monitor(self, client):
-        """pause the process and wait for the result of the cloud formation stack deletion"""
-        wait = 0
-        while True:
-            wait += self.timer
-            w = self.second_to_string(wait)
-            self.logger.info('')
-            time.sleep(self.timer)
-            self.logger.info(f'Deleting stack in progress ... [{w} elapsed]')
-            response = client.describe_stacks(StackName=self.infos.blue_infos.stack_id)
-            stack = response['Stacks'][0]
-            response2 = client.list_stack_resources(StackName=self.infos.blue_infos.stack_id)
-            for resource in response2['StackResourceSummaries']:
-                message = resource['LogicalResourceId'].ljust(40,'.')+resource['ResourceStatus']
-                if 'ResourceStatusReason'in resource:
-                    message += f' ( {resource["ResourceStatusReason"]} )'
-                self.logger.info(message)
-
-            if stack['StackStatus'] == 'DELETE_IN_PROGRESS':
-                continue
-            elif stack['StackStatus'] == 'DELETE_COMPLETE':
-                break
-            else:
-                raise ValueError('Error deletion blue cloudformation stack')
+    def _on_success(self):
+        if self.infos.action == 'deploy':
+            return SendNotificationBySnsStep(self.infos, self.logger)
+        else:
+            return DestroyInitStackStep(self.infos, self.logger)
+        
+    def _on_fail(self):
+        return None
+       

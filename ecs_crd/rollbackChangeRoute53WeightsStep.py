@@ -8,8 +8,7 @@ import traceback
 from ecs_crd.defaultJSONEncoder import DefaultJSONEncoder
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.destroyGreenStackStep import DestroyGreenStackStep
-from ecs_crd.finishDeploymentStep import FinishDeploymentStep
-
+from ecs_crd.sendNotificationBySnsStep import SendNotificationBySnsStep
 
 class RollbackChangeRoute53WeightsStep(CanaryReleaseDeployStep):
 
@@ -30,7 +29,7 @@ class RollbackChangeRoute53WeightsStep(CanaryReleaseDeployStep):
             self.logger.error('RollbackChangeRoute53WeightsStep', exc_info=True)
             self.infos.exit_exception = e
             self.infos.exit_code = 7
-            return FinishDeploymentStep(self.infos, self.logger)
+            return SendNotificationBySnsStep(self.infos, self.logger)
 
     def _is_ready_to_rollback_weights(self, client):
         response = client.list_resource_record_sets(HostedZoneId=self.infos.hosted_zone_id)

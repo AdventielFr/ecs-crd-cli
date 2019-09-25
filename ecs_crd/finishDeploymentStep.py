@@ -5,7 +5,6 @@ import datetime
 
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 
-
 class FinishDeploymentStep(CanaryReleaseDeployStep):
 
     def __init__(self, infos, logger):

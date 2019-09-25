@@ -32,7 +32,7 @@ class PolicyInfos:
         self.resource = resource
 
 
-class InitInfos:
+class StackInfos:
     def __init__(self):
         self.stack_id = None
         self.stack_name = None
@@ -40,7 +40,7 @@ class InitInfos:
         self.file_name = None
 
 
-class ReleaseInfos(InitInfos):
+class ReleaseInfos(StackInfos):
     def __init__(self):
         super().__init__()
         self.alb_arn = None
@@ -83,6 +83,7 @@ class ContainerDefinitionsInfos:
 class CanaryReleaseInfos:
     def __init__(self, environment, region, configuration_file, version_info):
         self.id = uuid.uuid4().hex
+        self.sns_topic_notification = None
         self.action = None
         self.account = None
         self.external_ip = None
@@ -103,7 +104,7 @@ class CanaryReleaseInfos:
         self.scale_infos = None
         self.configuration_file = configuration_file
         self.strategy_infos = []
-        self.init_infos = InitInfos()
+        self.init_infos = StackInfos()
         self.init_infos.stack = self._load_init_cloud_formation_template()
         self.green_infos = ReleaseInfos()
         self.green_infos.stack = self._load_green_cloud_formation_template()

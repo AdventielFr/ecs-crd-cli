@@ -8,6 +8,7 @@ import boto3
 import sys
 
 from ecs_crd.prepareDeploymentGlobalParametersStep import PrepareDeploymentGlobalParametersStep
+
 from ecs_crd.prepareUnDeploymentStep import PrepareUnDeploymentStep
 from ecs_crd.canaryReleaseInfos import CanaryReleaseInfos
 from ecs_crd.versionInfos import VersionInfos

@@ -2,6 +2,24 @@
 CHANGELOG
 =========
 
+0.9.0
+========
+
+Features:
+
+* add notification result sns.
+example 
+canary:
+  ...
+  sns_topic_notifications:
+    on_success: arn:aws:sns:eu-west-3:xxxxxxx:ecs-canary-deployment-on-success-result
+    on_fail: arn:aws:sns:eu-west-3:xxxxxx:ecs-canary-deployment-on-fail-result
+
+Chore:
+
+* refactoring create/destory stack step
+
+
 0.8.0
 ========
 
