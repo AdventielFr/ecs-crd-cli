@@ -1,21 +1,28 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import os
 import uuid
 import datetime
 import json
 import hashlib
-import re
+
+#Attention au try/catch IOError
 
 from ecs_crd.defaultJSONEncoder import DefaultJSONEncoder
 
+
 class ScaleInfos:
-     def __init__(self, ):
+    def __init__(self, ):
         self.desired = 2
         self.wait = 60
+
 
 class StrategyInfos:
     def __init__(self, weight, wait):
         self.weight = weight
         self.wait = wait
+
 
 class PolicyInfos:
     def __init__(self, name, effect, action, resource):
@@ -24,12 +31,14 @@ class PolicyInfos:
         self.action = action
         self.resource = resource
 
+
 class InitInfos:
     def __init__(self):
         self.stack_id = None
         self.stack_name = None
         self.stack = None
         self.file_name = None
+
 
 class ReleaseInfos(InitInfos):
     def __init__(self):
@@ -39,33 +48,38 @@ class ReleaseInfos(InitInfos):
         self.alb_hosted_zone_id = None
         self.canary_release = None
 
+
 class LoadBalancerInfos:
-    def __init__(self, arn, dns_name, canary_release, hosted_zone_id ):
+    def __init__(self, arn, dns_name, canary_release, hosted_zone_id):
         self.arn = arn
         self.dns_name = dns_name
         self.canary_release = canary_release
         self.is_elected = False
         self.hosted_zone_id = hosted_zone_id
 
+
 class ListenerRuleInfos:
     def __init__(self, listener_arn, configuration):
         self.listener_arn = listener_arn
         self.configuration = configuration
 
+
 class SecretInfos:
     def __init__(self):
         self.secrets = []
         self.kms_arn = []
-        self.secrets_arn = [] 
+        self.secrets_arn = []
+
 
 class ContainerDefinitionsInfos:
-        def __init__(self):
-            self.ports = []
-            self.image = None
-            self.cpu = 128
-            self.memmory = 128
-            self.environment = []
-            self.secrets = []
+    def __init__(self):
+        self.ports = []
+        self.image = None
+        self.cpu = 128
+        self.memmory = 128
+        self.environment = []
+        self.secrets = []
+
 
 class CanaryReleaseInfos:
     def __init__(self, environment, region, configuration_file, version_info):
@@ -98,7 +112,7 @@ class CanaryReleaseInfos:
         self.listener_rules_infos = []
         self.secrets_infos = None
         self.elected_release = None
-        self.ecs_crd_version =version_info.version
+        self.ecs_crd_version = version_info.version
         self.created_date = datetime.datetime.now().strftime('%FT%T%.000Z')
 
     def _load_green_cloud_formation_template(self):
@@ -120,14 +134,15 @@ class CanaryReleaseInfos:
         result['Parameters']['Environment']['Default'] = self.environment
         result['Parameters']['Region']['Default'] = self.region
         return result
-    
+
     def save(self):
+        cache_id = f".deploy-cache/{self.id}"
         if not os.path.exists('.deploy-cache'):
             os.mkdir('.deploy-cache')
-        if not os.path.exists('.deploy-cache/'+self.id):
-            os.mkdir('.deploy-cache/'+self.id)
-        with open('.deploy-cache/'+ self.id +'/deploy_info.json', 'w') as file:
-            file.write(json.dumps(self, cls= DefaultJSONEncoder, indent= 4))
+        if not os.path.exists(f"{cache_id}"):
+            os.mkdir(f".deploy-cache/{self.id}")
+        with open(f"{cache_id}/deploy_info.json", 'w') as file:
+            file.write(json.dumps(self, cls=DefaultJSONEncoder, indent=4))
 
     def get_hash(self):
         data = f'{self.canary_group}#{self.service_name}#{self.environment}#{self.region}'

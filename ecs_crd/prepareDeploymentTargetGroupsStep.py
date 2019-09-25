@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.prepareDeploymentListenersStep import PrepareDeploymentListenersStep
 

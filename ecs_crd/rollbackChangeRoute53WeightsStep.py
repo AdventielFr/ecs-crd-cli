@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import boto3
 import json
 import time
@@ -7,6 +9,7 @@ from ecs_crd.defaultJSONEncoder import DefaultJSONEncoder
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.destroyGreenStackStep import DestroyGreenStackStep
 from ecs_crd.finishDeploymentStep import FinishDeploymentStep
+
 
 class RollbackChangeRoute53WeightsStep(CanaryReleaseDeployStep):
 
@@ -30,9 +33,9 @@ class RollbackChangeRoute53WeightsStep(CanaryReleaseDeployStep):
             return FinishDeploymentStep(self.infos, self.logger)
 
     def _is_ready_to_rollback_weights(self, client):
-        response = client.list_resource_record_sets(HostedZoneId = self.infos.hosted_zone_id)
-        blue = list(filter(lambda x: x['Name']== self.infos.fqdn + '.' and x['SetIdentifier'] == self.infos.blue_infos.canary_release , response['ResourceRecordSets']))
-        return int(blue[0]['Weight']) <100
+        response = client.list_resource_record_sets(HostedZoneId=self.infos.hosted_zone_id)
+        blue = list(filter(lambda x: x['Name'] == f"{self.infos.fqdn}." and x['SetIdentifier'] == self.infos.blue_infos.canary_release, response['ResourceRecordSets']))
+        return int(blue[0]['Weight']) < 100
 
     def _rollback_weights(self, client):
         self.logger.info(f'FQDN : {self.infos.fqdn}')
@@ -47,7 +50,7 @@ class RollbackChangeRoute53WeightsStep(CanaryReleaseDeployStep):
         self.logger.info('')
 
         response = client.change_resource_record_sets(
-            HostedZoneId = self.infos.hosted_zone_id,
+            HostedZoneId=self.infos.hosted_zone_id,
             ChangeBatch={
                 'Comment': 'Rollback Route53 records sets for canary blue-green deployment',
                 'Changes': [
@@ -84,4 +87,3 @@ class RollbackChangeRoute53WeightsStep(CanaryReleaseDeployStep):
                 ]
             }
         )
- 
