@@ -9,7 +9,7 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
 
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        super().__init__(infos,'Prepare deployment ( Service definition )', logger)
+        super().__init__(infos, f'Prepare {infos.action} ( Service definition )', logger)
 
     def _process_scheduling_strategy(self):
         """update the sceduling stratégy informations for the service"""

@@ -11,7 +11,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
 
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        super().__init__(infos, 'Prepare deployment ( Container definitions )', logger)
+        super().__init__(infos, f'Prepare {infos.action} ( Container definitions )', logger)
 
     def _process_container_name(self, item, container):
         """update the name informations for the current container"""

@@ -8,7 +8,7 @@ class PrepareDeploymentTaskDefinitionStep(CanaryReleaseDeployStep):
 
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        super().__init__(infos, 'Prepare deployment ( Task definition )', logger)
+        super().__init__(infos, f'Prepare {infos.action} ( Task definition )', logger)
 
     def _process_cpu(self, item, cfn):
         if 'cpu' in item:

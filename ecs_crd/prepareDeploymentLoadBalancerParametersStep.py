@@ -8,14 +8,14 @@ from ecs_crd.canaryReleaseInfos import LoadBalancerInfos
 from ecs_crd.canaryReleaseInfos import ListenerRuleInfos
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.prepareDeploymentScaleParametersStep import PrepareDeploymentScaleParametersStep
-
+from ecs_crd.updateCanaryReleaseInfoStep import UpdateCanaryReleaseInfoStep
 
 class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
 
 
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        super().__init__(infos, 'Prepare deployment ( Load Balancer parameters )', logger)
+        super().__init__(infos, f'Prepare {infos.action} ( Load Balancer parameters )', logger)
 
     def _on_execute(self):
         """operation containing the processing performed by this step"""
@@ -79,20 +79,24 @@ class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
                     self.infos.blue_infos.stack_id = exist_blue_deployment['StackId']
                     self.infos.blue_infos.stack_name = f'{self.infos.environment}-{self.infos.service_name}-{blue.canary_release}'
 
-            self._log_sub_title('Load balancer "blue" {}'.format('(elected)' if self.infos.elected_release == 'blue' else ''))
+            self._log_sub_title('Load balancer "blue" {}'.format('(elected)' if self.infos.elected_release == 'blue' and self.infos.action=='deploy' else ''))
             self._log_information(key='Fqdn', value=blue.dns_name, indent=1, ljust=4)
             self._log_information(key='ARN', value=blue.arn, indent=1, ljust=4)
 
-            self._log_sub_title('Load balancer "green" {}'.format('(elected)' if self.infos.elected_release == 'green' else ''))
+            self._log_sub_title('Load balancer "green" {}'.format('(elected)' if self.infos.elected_release == 'green' and self.infos.action=='deploy' else ''))
             self._log_information(key='Fqdn', value=green.dns_name, indent=1, ljust=4)
             self._log_information(key='Dns', value=green.arn, indent=1, ljust=4)
 
             # init stack
             stack = self._find_cloud_formation_stack(self.infos.init_infos.stack_name)
-            if stack:
+            if stack and self.infos.action=='deploy':
+                # no recreate init stack for deploy
                 self.infos.init_infos.stack = None
             self.infos.save()
-            return PrepareDeploymentScaleParametersStep(self.infos, self.logger)
+            if self.infos.action=='deploy':
+                return PrepareDeploymentScaleParametersStep(self.infos, self.logger)
+            if self.infos.action=='undeploy':
+                return UpdateCanaryReleaseInfoStep(self.infos, self.logger)
 
         except Exception as e:
             self.infos.exit_code = 1
@@ -113,7 +117,6 @@ class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
         else:
             return None
 
-    
     def _find_load_balancers(self, dynamodb_item):
         client = boto3.client('elbv2', region_name=self.infos.region)
         response = client.describe_load_balancers()

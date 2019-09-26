@@ -9,7 +9,7 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
 
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        super().__init__(infos,'Prepare deployment ( IAM Role & Policies )', logger)
+        super().__init__(infos, f'Prepare {infos.action} ( IAM Role & Policies )', logger)
 
     def _convert_to_dto_policy_info(self, item, count):
         name = f'policy_{count}'

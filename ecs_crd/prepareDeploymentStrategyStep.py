@@ -10,7 +10,7 @@ class PrepareDeploymentStrategyStep(CanaryReleaseDeployStep):
 
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        super().__init__(infos, 'Prepare deployment ( Canary Strategy )', logger)
+        super().__init__(infos, f'Prepare {infos.action} ( Canary Strategy )', logger)
         self.min_wait = 40
         self.default_weight = 50
         self.default_wait = 60

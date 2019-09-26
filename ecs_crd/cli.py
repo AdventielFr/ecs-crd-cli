@@ -121,7 +121,7 @@ def undeploy(
         log_file):
     logger, canary_infos = _common_action(environment, region, configuration_file, configuration_dir, verbose, log_file)
     canary_infos.action = 'undeploy'
-    canary_step = PrepareUnDeploymentStep(canary_infos, logger)
+    canary_step = PrepareDeploymentGlobalParametersStep(canary_infos, logger)
     while (canary_step):
         canary_step = canary_step.execute()
     sys.exit(canary_infos.exit_code)

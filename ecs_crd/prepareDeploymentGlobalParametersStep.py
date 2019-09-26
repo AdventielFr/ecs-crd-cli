@@ -8,12 +8,11 @@ from ecs_crd.canaryReleaseInfos import StrategyInfos
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.prepareDeploymentLoadBalancerParametersStep import PrepareDeploymentLoadBalancerParametersStep
 
-
 class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
 
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        super().__init__(infos, 'Prepare deployment ( Global parameters )', logger)
+        super().__init__(infos, f'Prepare {infos.action} ( Global parameters )', logger)
 
     def _process_account_id(self):
         """update the AWS account ID informations for the service"""
@@ -97,7 +96,7 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
     def _on_execute(self):
         """operation containing the processing performed by this step"""
         try:
-            self._log_information(key='Deploy ID', value=self.infos.id, ljust=18)
+            self._log_information(key=f'{self.infos.action} ID', value=self.infos.id, ljust=18)
             self._process_account_id()
             self._process_canary_group()
             self._process_external_ip()
@@ -110,7 +109,6 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
             self._process_cluster()
             self.infos.save()
             self._create_dynamodb_table()
-
             return PrepareDeploymentLoadBalancerParametersStep(self.infos, self.logger)
         except Exception as e:
             self.infos.exit_code = 1

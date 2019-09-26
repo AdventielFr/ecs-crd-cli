@@ -33,7 +33,7 @@ class DestroyStackStep(CanaryReleaseDeployStep):
         except Exception as e:
             self.infos.exit_exception = e
             self.infos.exit_code = 8
-            self.logger.error('DestroyGreenStackStep', exc_info=True)
+            self.logger.error(self.title, exc_info=True)
             return self._on_fail()
             
 

@@ -9,7 +9,7 @@ class PrepareDeploymentTargetGroupsStep(CanaryReleaseDeployStep):
 
     def __init__(self, infos, logger):
         """initialize a new instance of class"""
-        super().__init__(infos, 'Prepare deployment ( Target groups )', logger)
+        super().__init__(infos, f'Prepare {infos.action} ( Target groups )', logger)
 
     def _process_target_group_tags(self, item, target_group):
         """update tags informations for the target group"""

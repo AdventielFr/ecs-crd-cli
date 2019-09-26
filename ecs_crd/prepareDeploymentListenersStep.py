@@ -10,7 +10,7 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
 
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        super().__init__(infos,'Prepare deployment ( Listeners )', logger)
+        super().__init__(infos,  f'Prepare {infos.action}( Listeners )', logger)
 
     def _on_execute(self):
         """operation containing the processing performed by this step"""

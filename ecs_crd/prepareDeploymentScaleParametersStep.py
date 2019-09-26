@@ -10,7 +10,7 @@ class PrepareDeploymentScaleParametersStep(CanaryReleaseDeployStep):
 
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        super().__init__(infos, 'Prepare deployment ( Scale parameters )', logger)
+        super().__init__(infos, f'Prepare {infos.action} ( Scale parameters )', logger)
         self.min_wait = 40
 
     def _on_execute(self):
