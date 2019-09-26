@@ -8,8 +8,6 @@ import boto3
 import sys
 
 from ecs_crd.prepareDeploymentGlobalParametersStep import PrepareDeploymentGlobalParametersStep
-
-from ecs_crd.prepareUnDeploymentStep import PrepareUnDeploymentStep
 from ecs_crd.canaryReleaseInfos import CanaryReleaseInfos
 from ecs_crd.versionInfos import VersionInfos
 
@@ -131,7 +129,6 @@ def undeploy(
 def version():
     version_infos = VersionInfos()
     print(f'{version_infos.description} - {version_infos.version}')
-
 
 def _create_logger(verbose, log_file):
     logger = logging.getLogger('ecs-crd')
