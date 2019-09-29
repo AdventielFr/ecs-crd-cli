@@ -98,7 +98,12 @@ def _common_action(environment, region, configuration_file, configuration_dir, v
     parameters.configuration_file = configuration_file
     parameters.configuration_dir = configuration_dir
     parameters.validate()
-    canary_infos = CanaryReleaseInfos(parameters.environment, parameters.region, parameters.configuration_file, version_infos)
+    canary_infos = CanaryReleaseInfos(
+        environment = parameters.environment,
+        region = parameters.region,
+        configuration_file = configuration_file,
+        ecs_crd_version = version_infos
+    )
     canary_infos.initialize()
     return logger, canary_infos
 

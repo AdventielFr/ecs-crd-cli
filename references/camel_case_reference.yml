@@ -107,24 +107,27 @@ service:
         actions:
           - string
         resources:
-          - string    
-  # Auto scaling definition
+          - string
+  # Auto scaling definition    
   autoScaling:
     minCapacity: integer
     maxCapacity: integer
     roleArn: string
     # Step scaling policy definition
-    stepScalingPolicyConfiguration:
-      - name: string
-        adjustmentType: string
-        cooldown: integer
-        metricAggregationType: string
-        # Step ajustments definition
-        stepAdjustments:
-          - metricIntervalLowerBound: integer
-            scalingAdjustment: integer
-          - metricIntervalUpperBound: integer
-            scalingAdjustment: integer
+    autoScalingPolicies:
+      - policyName: string
+        policyType: string
+        # Step scaling policy configuration definition
+        stepScalingPolicyConfiguration:
+          adjustmentType: string
+          cooldown: integer
+          metricAggregationType: string
+          # Step ajustments definition
+          stepAdjustments:
+            - metricIntervalLowerBound: integer
+              scalingAdjustment: integer
+            - metricIntervalUpperBound: integer
+              scalingAdjustment: integer
         # Cloudwatch alarms definition
         cloudwatchAlarms:
           - metricName: string

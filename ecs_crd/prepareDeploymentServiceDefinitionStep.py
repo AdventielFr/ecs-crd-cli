@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import re
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.prepareDeploymentTaskDefinitionStep import PrepareDeploymentTaskDefinitionStep
-
 
 class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
 
@@ -11,19 +11,22 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
         """initializes a new instance of the class"""
         super().__init__(infos, f'Prepare {infos.action} ( Service definition )', logger)
 
-    def _process_scheduling_strategy(self):
+    def process_scheduling_strategy(self, origin, properties):
         """update the sceduling stratégy informations for the service"""
-        self.infos.green_infos.stack['Resources']['Service']['Properties']['SchedulingStrategy'] = 'REPLICA'
-        if 'scheduling_strategy' in self.configuration['service']:
-            if self.configuration['service']['scheduling_strategy'].upper() == 'DAEMON':
-                self.infos.green_infos.stack['Resources']['Service']['Properties']['SchedulingStrategy'] = 'DAEMON'
-        self._log_information(key='Scheduling Strategy', value=self.infos.green_infos.stack['Resources']['Service']['Properties']['SchedulingStrategy'], ljust=10, indent=1)
-
-    def _process_platform_version(self):
+        if 'scheduling_strategy' in origin:
+            val = re.match('DAEMON|REPLICA', origin['scheduling_strategy'])
+            if not val:
+                raise ValueError(f'{origin["scheduling_strategy"]} is not valid for SchedulingStrategy.')
+            properties['SchedulingStrategy'] = val.group(0)
+        else:
+            properties['SchedulingStrategy'] = 'REPLICA'
+        self._log_information(key='Scheduling Strategy', value=properties['SchedulingStrategy'], ljust=10, indent=1)
+    
+    def process_platform_version(self, origin, properties):
         """update the plaform version informations for the service"""
-        if 'platform_version' in self.configuration['service']:
-            self.infos.green_infos.stack['Resources']['Service']['Properties']['PlatformVersion'] = self.configuration['service']['platform_version']
-            self._log_information(key='Platform Version', value=self.infos.green_infos.stack['Resources']['Service']['Properties']['PlatformVersion'], ljust=10, indent=1)
+        if 'platform_version' in origin:
+            properties['PlatformVersion'] = origin['platform_version']
+            self._log_information(key='Platform Version', value=origin['PlatformVersion'], ljust=10, indent=1)
 
     def _process_placement_constraints(self):
         """update the placement constraintes informations for the service"""
@@ -68,51 +71,26 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
                     definition['TargetGroupArn']['Ref'] = "TargetGroup{}".format(''.join(id.capitalize() for id in w.split('_')))
                     cfn.append(definition)
 
-    def _on_execute(self):
-        """operation containing the processing performed by this step"""
-        try:
-            self._process_scheduling_strategy()
-            self._process_platform_version()
-            self._process_placement_constraints()
-            self._process_placement_stategies()
-            self._process_load_balancer()
-            self._process_auto_scaling()
-            self.infos.save()
-            return PrepareDeploymentTaskDefinitionStep(self.infos, self.logger)
-        except Exception as e:
-            self.infos.exit_code = 1
-            self.infos.exit_exception = e
-            self.logger.error(self.title, exc_info=True)
-        else:
-            return None
-
-    def _process_auto_scaling(self):            
-        if 'auto_scaling' in self.configuration['service']:
+    def process_auto_scaling(self, origin):            
+        if 'auto_scaling' in origin:
             self._log_information(key = "AutoScaling", value='', indent=1)
-            auto_scaling = self.configuration['service']['auto_scaling']
-            self._process_application_autoscaling_scalable_target(auto_scaling)
-            count_policy = 1
-            for auto_scaling_policy in auto_scaling['auto_scaling_policies']:
-                self._process_application_auto_scaling_scaling_policy(auto_scaling_policy, count_policy)
-                if 'cloudwatch_alarms' in auto_scaling_policy:
-                    self._log_information(key = 'CloudWatch Alarms', value='', indent=5)
-                    count_cloudwatch_alarms = 1
-                    for cloudwatch_alarm in auto_scaling_policy['cloudwatch_alarms']:
-                        self._process_cloudwatch_alarm(cloudwatch_alarm, count_policy, count_cloudwatch_alarms)
-                        count_cloudwatch_alarms = count_cloudwatch_alarms + 1
-                count_policy = count_policy +1
+            origin = origin['auto_scaling']
+            self.process_application_autoscaling_scalable_target(origin)
+            count = 1
+            for item in origin['auto_scaling_policies']:
+                self.process_application_auto_scaling_scaling_policy(item, count)
 
-    def _process_application_autoscaling_scalable_target(self, auto_scaling):
+    def process_application_autoscaling_scalable_target(self, origin):
         cfn = {}
         cfn['Type'] = 'AWS::ApplicationAutoScaling::ScalableTarget'
         properties = {}
-        if 'min_capacity' in auto_scaling:
-            properties['MinCapacity'] = int(auto_scaling['minimum'])
+        if 'min_capacity' in origin:
+            properties['MinCapacity'] = int(origin['min_capacity'])
         else:
             properties['MinCapacity'] = self.infos.scale_infos.desired
         self._log_information(key = 'MinCapacity', value=properties['MinCapacity'], indent=2)
-        if 'max_capacity' in auto_scaling:
-            properties['MaxCapacity'] = int(auto_scaling['maximum'])
+        if 'max_capacity' in origin:
+            properties['MaxCapacity'] = int(origin['max_capacity'])
         else:
             properties['MaxCapacity'] = self.infos.scale_infos.desired
         self._log_information(key = 'MaxCapacity', value=properties['MaxCapacity'], indent=2)
@@ -120,21 +98,21 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
         properties['ResourceId'] = f'service/{self.infos.cluster_name}/{self.infos.service_name}-{self.infos.green_infos.canary_release}'
         properties['ScalableDimension'] = 'ecs:service:DesiredCount'
         properties['ServiceNamespace'] = 'ecs'
-        properties['RoleARN'] = self.bind_data(auto_scaling['role_arn'])
+        properties['RoleARN'] = self.bind_data(origin['role_arn'])
         self._log_information(key = 'RoleARN', value=properties['RoleARN'], indent=2)
 
         cfn['Properties'] = properties
         cfn['DependsOn'] = 'Service'
         self.infos.green_infos.stack['Resources']['AutoScalingTarget'] = cfn
 
-    def _process_application_auto_scaling_scaling_policy(self, auto_scaling_policy, count_policy):
+    def process_application_auto_scaling_scaling_policy(self, origin, count):
         cfn = {}
-        self._log_information(key = 'ApplicationAutoScalingScalingPolicies', value= '', indent=2)
+        self._log_information(key = 'AutoScalingPolicies', value= '', indent=2)
         cfn['Type'] = 'AWS::ApplicationAutoScaling::ScalingPolicy'
         properties = {}
-        properties['PolicyName'] = f'{self.infos.service_name}-scaling-policy-{count_policy}'
-        if 'policy_name' in auto_scaling_policy:
-            properties['PolicyName']  = auto_scaling_policy['policy_name']
+        properties['PolicyName'] = f'{self.infos.service_name}-scaling-policy-{count}'
+        if 'policy_name' in origin:
+            properties['PolicyName']  = origin['policy_name']
         self._log_information(key = '- PolicyName', value=properties['PolicyName'], indent=3)
         properties['PolicyType'] = 'StepScaling'
         self._log_information(key = 'PolicyType', value=properties['PolicyType'], indent=5)
@@ -142,102 +120,199 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
         properties['ScalingTargetId']['Ref'] = 'AutoScalingTarget'
         properties['ScalableDimension'] = 'ecs:service:DesiredCount'
         properties['ServiceNamespace'] = 'ecs'
-
+        self.process_step_scaling_policy_configuration(origin, properties)
+        self.process_cloudwatch_alarms(origin, properties, count)
         cfn['Properties'] = properties
-        self.infos.green_infos.stack['Resources'][f'AutoScalingPolicy{count_policy}'] = cfn
+        self.infos.green_infos.stack['Resources'][f'AutoScalingPolicy{count}'] = cfn
 
-    def _process_step_scaling_policy_configuration(self, properties):
-        properties['StepScalingPolicyConfiguration'] = {}
-        properties['StepScalingPolicyConfiguration']['AdjustmentType'] = 'ChangeInCapacity'
-        properties['StepScalingPolicyConfiguration']['Cooldown'] = 60
-        properties['StepScalingPolicyConfiguration']['MetricAggregationType'] = 'Average'
-        if 'step_scaling_policy_configuration' in auto_scaling_policy:
-            step_scaling_policy_configuration = auto_scaling_policy['step_scaling_policy_configuration']
-            if 'adjustment_type' in step_scaling_policy_configuration:
-                properties['StepScalingPolicyConfiguration']['AdjustmentType'] = int(step_scaling_policy_configuration['adjustment_type'])
-            if 'cooldown' in step_scaling_policy_configuration:
-                properties['StepScalingPolicyConfiguration']['Cooldown'] = int(step_scaling_policy_configuration['cooldown'])
-            if 'metric_aggregation_type' in step_scaling_policy_configuration:
-                properties['StepScalingPolicyConfiguration']['MetricAggregationType'] = step_scaling_policy_configuration['metric_aggregation_type']
-            self._process_step_scaling_policy_configuration_step_adjustments(properties, step_scaling_policy_configuration)
-
-        self._log_information(key = 'StepScalingPolicyConfiguration', value='', indent=5)
-        self._log_information(key = 'AdjustmentType', value=properties['StepScalingPolicyConfiguration']['AdjustmentType'], indent=6)
-        self._log_information(key = 'Cooldown', value=properties['StepScalingPolicyConfiguration']['Cooldown'], indent=6)
-        self._log_information(key = 'MetricAggregationType', value=properties['StepScalingPolicyConfiguration']['MetricAggregationType'], indent=6)
-        self._log_information(key = 'StepAdjustments', value='', indent=6)
-        for i in properties['StepScalingPolicyConfiguration']['StepAdjustments']:
-            if 'MetricIntervalLowerBound' in i:
-                self._log_information(key = '- MetricIntervalLowerBound', value=i['MetricIntervalLowerBound'], indent=7)
-            if 'MetricIntervalUpperBound' in i:
-                self._log_information(key = '- MetricIntervalUpperBound', value=i['MetricIntervalUpperBound'], indent=7)
-            if 'ScalingAdjustment' in i:
-                self._log_information(key = 'ScalingAdjustment', value=i['ScalingAdjustment'], indent=9)
-
-    def _process_step_scaling_policy_configuration_step_adjustments(self, properties, step_scaling_policy_configuration):
-        step_adjustments = []
-        if 'step_adjustments' in step_scaling_policy_configuration:
-             for e in auto_scaling_policy['step_scaling_policy_configuration']['step_adjustments']:
-                step_adjustment = {}
-                if 'metric_interval_lower_bound' in e:
-                    step_adjustment['MetricIntervalLowerBound'] = int(e['metric_interval_lower_bound'])
-                if 'metric_interval_upper_bound' in e:
-                    step_adjustment['MetricIntervalUpperBound'] = int(e['metric_interval_upper_bound'])
-                if 'scaling_adjustment' in e:
-                    step_adjustment['ScalingAdjustment'] = int (e['scaling_adjustment'])
-                step_adjustments.append(step_adjustment)
+    def process_step_scaling_policy_configuration_adjustment_type(self, source, properties):
+        """process step_scaling_policy_configuration.adjustment_type"""
+        if 'adjustment_type' in source:
+            val = re.match('ChangeInCapacity|ExactCapacity|PercentChangeInCapacity', source['adjustment_type'])
+            if not val:
+                raise ValueError(f'{source["adjustment_type"]} is not valid for StepScalingPolicyConfiguration.')
+            properties['AdjustmentType'] = val.group(0)
         else:
-            step_adjustment = {}
-            step_adjustment['MetricIntervalLowerBound'] = 0
-            step_adjustment['ScalingAdjustment'] = 1
-            step_adjustments.append(step_adjustment)
-            step_adjustment = {}
-            step_adjustment['MetricIntervalUpperBound'] = 0
-            step_adjustment['ScalingAdjustment'] = -1
-            step_adjustments.append(step_adjustment)
-        properties['StepScalingPolicyConfiguration']['StepAdjustments'] = step_adjustments
+            properties['AdjustmentType'] = 'ChangeInCapacity'
+        self._log_information(key = 'AdjustmentType', value=properties['AdjustmentType'], indent=6)
+    
+    def process_step_scaling_policy_configuration_cooldown(self, source, properties):
+        """process step_scaling_policy_configuration.cooldown"""
+        if 'cooldown' in source:
+            if not isinstance(source['cooldown'], int) or source['cooldown'] < 0:
+                raise ValueError(f'{source["cooldown"]} is not valid for StepScalingPolicyConfiguration.')
+            properties['Cooldown'] = int(source['cooldown'])
+        else:
+            properties['Cooldown'] = 60
+        self._log_information(key = 'Cooldown', value=properties['Cooldown'], indent=6)
+   
+    def process_step_scaling_policy_configuration_metric_aggregation_type(self, source, properties):
+        """process step_scaling_policy_configuration.metric_aggregation_type"""
+        if 'metric_aggregation_type' in source:
+            val = re.match('Average|Minimum|Maximum', source['metric_aggregation_type'])
+            if not val:
+                raise ValueError(f'{source["metric_aggregation_type"]} is not valid for StepScalingPolicyConfiguration.')
+            properties['MetricAggregationType'] = val.group(0)
+        else:
+            properties['MetricAggregationType'] = 'Average'
+        self._log_information(key = 'MetricAggregationType', value=properties['MetricAggregationType'], indent=6)
 
-    def _process_cloudwatch_alarm(self, alarm, count_policy, count_cloudwatch_alarms):
+    def process_step_scaling_policy_configuration(self, origin, target):
+        if 'step_scaling_policy_configuration' not in origin:
+            raise ValueError('The StepScalingPolicyConfiguration is required')
+        sub_origin= origin['step_scaling_policy_configuration']   
+        sub_target = {}
+        self._log_information(key = 'StepScalingPolicyConfiguration', value='', indent=5)
+        # adjustment_type
+        self.process_step_scaling_policy_configuration_adjustment_type(sub_origin, sub_target)
+        # cooldown
+        self.process_step_scaling_policy_configuration_cooldown(sub_origin,sub_target)
+        # metric_aggregation_type
+        self.process_step_scaling_policy_configuration_metric_aggregation_type(sub_origin, sub_target)
+        # step_adjustments
+        self.process_step_scaling_policy_configuration_step_adjustments(sub_origin, sub_target)
+        target['StepScalingPolicyConfiguration'] = sub_target
+
+    def process_step_scaling_policy_configuration_step_adjustments(self, origin, target):
+        if 'step_adjustments' not in origin:
+            raise ValueError('StepAdjustments is required')
+        target['StepAdjustments'] = [] 
+        for sub_origin in origin['step_adjustments']:
+                sub_target = {}
+                # metric_interval_lower_bound
+                self.process_step_scaling_policy_configuration_step_adjustments_metric_interval_lower_bound(sub_origin, sub_target)
+                # metric_interval_upper_bound
+                self.process_step_scaling_policy_configuration_step_adjustments_metric_interval_upper_bound(sub_origin, sub_target)
+                # scaling_adjustment
+                self.process_step_scaling_policy_configuration_step_adjustments_scaling_adjustment(sub_origin, sub_target)
+                target['StepAdjustments'].append(sub_target)
+   
+    def process_step_scaling_policy_configuration_step_adjustments_metric_interval_lower_bound(self, origin, target):
+        if 'metric_interval_lower_bound' in origin:
+            if not isinstance(origin['metric_interval_lower_bound'], int) :
+                raise ValueError(f'{origin["metric_interval_lower_bound"]} is not valid for StepAdjustment.MetricIntervalLowerBound')
+            target['MetricIntervalLowerBound'] = int(origin['metric_interval_lower_bound'])
+            self._log_information(key = '- MetricIntervalLowerBound', value=target['MetricIntervalLowerBound'], indent=7)
+
+    def process_step_scaling_policy_configuration_step_adjustments_metric_interval_upper_bound(self, origin, target):
+        if 'metric_interval_upper_bound' in origin:
+            if not isinstance(origin['metric_interval_upper_bound'], int) :
+                raise ValueError(f'{origin["metric_interval_upper_bound"]} is not valid for StepAdjustment.MetricIntervalUpperBound')
+            target['MetricIntervalUpperBound'] = int(origin['metric_interval_upper_bound'])
+            self._log_information(key = '- MetricIntervalUpperBound', value=target['MetricIntervalUpperBound'], indent=7)
+
+    def process_step_scaling_policy_configuration_step_adjustments_scaling_adjustment(self, origin, target):
+        if 'scaling_adjustment' in origin:
+            if not isinstance(origin['scaling_adjustment'], int) :
+                raise ValueError(f'{origin["scaling_adjustment"]} is not valid for StepAdjustment.ScalingAdjustment')
+            target['ScalingAdjustment'] = int(origin['scaling_adjustment'])
+            self._log_information(key = 'ScalingAdjustment', value=target['ScalingAdjustment'], indent=9)
+
+    def process_cloudwatch_alarms(self, origin, target, count):
+        if 'cloudwatch_alarms' not in origin:
+            raise ValueError('CloudwatchAlarms is required')
+        self._log_information(key='CloudWatch Alarms', value='', indent=5)
+        count_cloudwatch_alarms = 1
+        for sub_origin in origin['cloudwatch_alarms']:
+            self.process_cloudwatch_alarm(sub_origin, count, count_cloudwatch_alarms)
+            count_cloudwatch_alarms = count_cloudwatch_alarms + 1
+
+    def process_cloudwatch_alarm_metric_name(self, origin, target):
+        if 'metric_name' in origin:
+            val = re.match('CPUUtilization|MemoryUtilization', origin['metric_name'])
+            if not val:
+                raise ValueError(f'{origin["metric_name"]} is not valid for CloudwatchAlarm.MetricName.')
+            target['MetricName'] = val.group(0)
+        else:
+            raise ValueError('The MetricName is required for CloudwatchAlarm.')  
+        self._log_information(key = '- MetricName', value=target['MetricName'], indent=6)  
+
+    def process_cloudwatch_alarm_alarm_description(self, origin, target):
+        if 'alarm_description' in origin:
+            target['AlarmDescription'] = origin['alarm_description']
+        else:
+            target['AlarmDescription'] = f'Containers {target["MetricName"]} High'
+        self._log_information(key = 'AlarmDescription', value=target['AlarmDescription'], indent=8)
+
+    def process_cloudwatch_alarm_namespace(self, origin, target):
+        if 'namespace' in origin:
+            target['Namespace'] = origin['namespace']
+        else:
+            target['Namespace'] = 'AWS/ECS'
+        self._log_information(key = 'Namespace', value=target['Namespace'], indent=8)
+    
+    def process_cloudwatch_alarm_statistic(self, origin, target):
+        if 'statistic' in origin:
+            val = re.match('Average|Maximum|Minimum|SampleCount|Sum', origin['statistic'])
+            if not val:
+                raise ValueError(f'{origin["statistic"]} is not valid for CloudwatchAlarm.Statistic.')
+            target['Statistic'] = val.group(0)
+        else:
+            target['Statistic'] = 'Average'
+        self._log_information(key = 'Statistic', value=target['Statistic'], indent=8)
+    
+    def process_cloudwatch_alarm_period(self, origin, target):
+        if 'period' in origin:
+            if not isinstance(origin['period'], int):
+                raise ValueError(f'{origin["period"]} is not valid for CloudwatchAlarm.Period.')
+            target['Period'] = int(origin['period'])
+        else:
+            target['Period'] = 300
+        self._log_information(key = 'Period', value=target['Period'], indent=8)
+
+    def process_cloudwatch_alarm_evaluation_periods(self, origin, target):
+        if 'evaluation_periods' in origin:
+            if not isinstance(origin['evaluation_periods'], int):
+                raise ValueError(f'{origin["evaluation_periods"]} is not valid for CloudwatchAlarm.EvaluationPeriods.')
+            target['EvaluationPeriods'] = int(origin['evaluation_periods'])
+        else:
+            target['EvaluationPeriods'] = 1
+        self._log_information(key = 'EvaluationPeriods', value=target['EvaluationPeriods'], indent=8)
+
+    def process_cloudwatch_alarm_threshold(self, origin, target):
+        if 'threshold' in origin:
+            if not isinstance(origin['threshold'], int):
+                raise ValueError(f'{origin["threshold"]} is not valid for CloudwatchAlarm.Threshold.')
+            target['Threshold'] = int(origin['threshold'])
+        else:
+            raise ValueError('Threshold is required in CloudwatchAlarm')
+        self._log_information(key = 'Threshold', value=target['Threshold'], indent=8)
+
+    def process_cloudwatch_alarm_comparison_operator(self, origin, target):
+        if 'comparison_operator' in origin:
+            val = re.match('GreaterThanOrEqualToThreshold|GreaterThanThreshold|LessThanOrEqualToThreshold|LessThanThreshold', origin['comparison_operator'])
+            if not val:
+                raise ValueError(f'{origin["comparison_operator"]} is not valid for CloudwatchAlarm.ComparisonOperator.')
+            target['ComparisonOperator'] = val.group(0)
+        else:
+           raise ValueError('ComparisonOperator is required in CloudwatchAlarm')
+        self._log_information(key = 'ComparisonOperator', value=target['ComparisonOperator'], indent=8)
+
+    def process_cloudwatch_alarm(self, origin, count_policy, count_cloudwatch_alarms):
         cfn = {}
         cfn['Type'] = 'AWS::CloudWatch::Alarm'
         properties = {}
+        # metric_name
+        self.process_cloudwatch_alarm_metric_name(origin, properties)
+        # alarm_description
+        self.process_cloudwatch_alarm_alarm_description(origin, properties)
+        # namespace
+        self.process_cloudwatch_alarm_namespace(origin, properties)
+        # statistic
+        self.process_cloudwatch_alarm_statistic(origin, properties)
+        # period
+        self.process_cloudwatch_alarm_period(origin, properties)
+        # evaluation_periods
+        self.process_cloudwatch_alarm_evaluation_periods(origin, properties)
+        # threshold
+        self.process_cloudwatch_alarm_threshold(origin, properties)
+        # comparison_operator
+        self.process_cloudwatch_alarm_comparison_operator(origin, properties)
 
-        properties['MetricName'] = alarm['metric_name']
-        self._log_information(key = '- MetricName', value=properties['MetricName'], indent=6)
-
-        properties['AlarmDescription'] = f'Containers {properties["MetricName"]} High'
-        if 'alarm_description' in alarm:
-            properties['AlarmDescription'] = alarm['alarm_description']
-        self._log_information(key = 'AlarmDescription', value=properties['AlarmDescription'], indent=8)
-        
-        properties['Namespace'] = 'AWS/ECS'
-        if 'namespace' in alarm:
-            properties['Namespace'] = alarm['namespace']
-        self._log_information(key = 'Namespace', value=properties['Namespace'], indent=8)
-
-        properties['Statistic'] = 'Average'
-        if 'statistic' in alarm:
-            properties['Statistic'] = alarm['statistic']
-        self._log_information(key = 'Statistic', value=properties['Statistic'], indent=8)
-
-        properties['Period'] = 300
-        if 'period' in alarm:
-            properties['Period'] = int(alarm['period'])
-
-        self._log_information(key = 'Period', value=properties['Period'], indent=8)
-
-        properties['EvaluationPeriods'] = 1
-        if 'evaluation_periods' in alarm:
-            properties['EvaluationPeriods'] = int(alarm['evaluation_periods'])
-        self._log_information(key = 'EvaluationPeriods', value=properties['EvaluationPeriods'], indent=8)
-
-        properties['Threshold'] = int(alarm['threshold'])
-        self._log_information(key = 'Threshold', value=properties['Threshold'], indent=8)
         properties['AlarmActions'] = []
         alarm_action = {}
         alarm_action['Ref'] = f'AutoScalingPolicy{count_policy}'
         properties['AlarmActions'].append(alarm_action)
-        
         dimensions = []
         dimension = {}
         dimension['Name'] = 'ServiceName'
@@ -247,15 +322,11 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
         dimension['Name'] = 'ClusterName'
         dimension['Value'] = f'{self.infos.cluster_name}'
         dimensions.append(dimension)
-
         properties['Dimensions'] = dimensions
         self._log_information(key = '  Dimensions', value='', indent=6)
         for d in properties['Dimensions']:
             self._log_information(key = '- Name', value=d['Name'], indent=9)
             self._log_information(key = 'Value', value=d['Value'], indent=11)
-
-        properties['ComparisonOperator'] = alarm['comparison_operator']
-        self._log_information(key = 'ComparisonOperator', value=properties['ComparisonOperator'], indent=8)
         cfn['Properties'] = properties
         cfn['DependsOn'] = f'AutoScalingPolicy{count_policy}'
         self.infos.green_infos.stack['Resources'][f'AutoScalingAlarm{count_cloudwatch_alarms}'] = cfn
@@ -263,12 +334,15 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
     def _on_execute(self):
         """operation containing the processing performed by this step"""
         try:
-            self._process_scheduling_strategy()
-            self._process_platform_version()
+            origin = self.configuration['service']
+            properties = self.infos.green_infos.stack['Resources']['Service']['Properties']
+
+            self.process_scheduling_strategy(origin, properties)
+            self.process_platform_version(origin, properties)
             self._process_placement_constraints()
             self._process_placement_stategies()
             self._process_load_balancer()
-            self._process_auto_scaling()
+            self.process_auto_scaling(origin)
             self.infos.save()
             return PrepareDeploymentTaskDefinitionStep(self.infos, self.logger)
         except Exception as e:

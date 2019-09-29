@@ -112,24 +112,27 @@ service:
           - string
         resources:
           - string    
-  # Suto scaling definition
+  # Auto scaling definition  
   auto_scaling:
     min_capacity: integer
     max_capacity: integer
     role_arn: string
     # Step scaling policy definition
-    step_scaling_policy_configuration:
-      - name: string
-        adjustment_type: string
-        cooldown: integer
-        metric_aggregation_type: string
-        # Step ajustments definition
-        step_adjustments:
-          - metric_interval_lower_bound: integer
-            scaling_adjustment: integer
-          - metric_interval_upper_bound: integer
-            scaling_adjustment: integer
-         # Cloudwatch alarms definition
+    auto_scaling_policies:
+      - policy_name: string
+        policy_type: string
+        # Step scaling policy configuration definition
+        step_scaling_policy_configuration:
+          adjustment_type: string
+          cooldown: integer
+          metric_aggregation_type: string
+          # Step ajustments definition
+          step_adjustments:
+            - metric_interval_lower_bound: integer
+              scaling_adjustment: integer
+            - metric_interval_upper_bound: integer
+              scaling_adjustment: integer
+        # Cloudwatch alarms definition
         cloudwatch_alarms:
           - metric_name: string
             alarm_description: string

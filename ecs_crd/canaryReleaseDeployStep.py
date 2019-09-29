@@ -40,7 +40,7 @@ class CanaryReleaseDeployStep(ABC):
     def _log_information(self, key, value, ljust=None, indent=0):
         if not ljust:
             ljust = len(key)
-        data = "{}{}{} {}".format(''.ljust(indent), key.ljust(ljust), ':' if value else '', '' if not value else value)
+        data = "{}{}{} {}".format(''.ljust(indent), key.ljust(ljust), ':' if value!=None else '', '' if not value else value)
         self.logger.info(data)
 
     def _log_end(self):
@@ -84,9 +84,11 @@ class CanaryReleaseDeployStep(ABC):
 
     def _load_configuration(self):
         """load configuration"""
-        with open(self.infos.configuration_file, 'r') as stream:
-            result =  self._normalize(yaml.safe_load(stream))
-            return result
+        if self.infos.configuration_file:
+            with open(self.infos.configuration_file, 'r') as stream:
+                result = self._normalize(yaml.safe_load(stream))
+                return result
+        return None
 
     def _normalize(self, item):
         """normalize to snake case"""
