@@ -24,6 +24,16 @@ service:
   ipcMode: string
   requiresCompatibilities:
     - string
+  schedulingStrategy: string
+  platformVersion: string
+  # Placement constraint definition
+  placementConstraints:
+    - expression: string
+      type: string
+  # Placement strategy definition
+  placementStrategies:
+    - field: string
+      type: string
   # Volume definition
   volumes:
     - name: string

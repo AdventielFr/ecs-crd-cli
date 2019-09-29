@@ -25,6 +25,16 @@ service:
   network_mode: string
   requires_compatibilities:
     - string
+  scheduling_strategy: string
+  platform_version: string
+  # Placement constraint definition
+  placement_constraints:
+    - expression: string
+      type: string
+  # Placement strategy definition
+  placement_strategies:
+    - field: string
+      type: string
   # Volume definition
   volumes:
     - name: string
