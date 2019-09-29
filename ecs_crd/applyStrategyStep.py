@@ -110,10 +110,10 @@ class CheckGreenHealthStep(CanaryReleaseDeployStep):
             state = "UNKNOWN"
             if response['TargetHealthDescriptions']:
                 state = response['TargetHealthDescriptions'][0]['TargetHealth']['State'].upper()
+            self.logger.info('')
             self._log_information(key='Target Group', value=e['OutputKey'][:-3])
             self._log_information(key='ARN', value=e['OutputValue'], indent=1)
             self._log_information(key='State', value=state, indent=1)
-            self.logger.info('')
             result.append(state)
         return result
 
@@ -133,7 +133,7 @@ class CheckGreenHealthStep(CanaryReleaseDeployStep):
                 is_healthy_and_initial = self._is_all_full_states(health_checks, ['HEALTHY', 'INITIAL'])
                 if is_healthy_and_initial:
                     if self._nb_initial_test < self._nb_max_initial_test:
-                        self.wait(15, f'Waiting for service start ( Number of attempts {self._nb_initial_test}/{self._nb_max_initial_test}) ...')
+                        self.wait(15, f'Waiting for service to start (attempts {self._nb_initial_test}/{self._nb_max_initial_test})')
                         self._nb_initial_test += 1
                         continue
                 raise ValueError(f'Invalid state for Green TargetGroup')

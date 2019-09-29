@@ -53,7 +53,7 @@ class PrepareDeploymentTargetGroupsStep(CanaryReleaseDeployStep):
     def _process_target_group_port(self, item, target_group_info, target_group):
         """update port informations for the target group"""
         if 'port' in target_group_info:
-            if self.is_int(target_group_info['port']):
+            if isinstance(target_group_info['port'],int):
                 target_group['Properties']['Port'] = int(
                     target_group_info['port'])
             else:
@@ -110,7 +110,7 @@ class PrepareDeploymentTargetGroupsStep(CanaryReleaseDeployStep):
         if host_port != 0:
             # Port
             if 'port' in health_check_infos:
-                if self.is_int(health_check_infos['port']):
+                if isinstance(health_check_infos['port'],int):
                     target_group['Properties']['HealthCheckPort'] = int(
                         health_check_infos['port'])
                 else:

@@ -1,0 +1,160 @@
+# Canary deployment definition
+Canary:
+  Group: string
+  Releases:
+    Blue: string
+    Green: string
+  # Scale on start definition
+  Scale:
+    Desired: integer
+    Wait: integer
+  # Strategy deployment definition
+  Strategy:
+    - Weight: integer
+      Wait: integer
+# Service definition
+Service:
+  Project: string
+  Name: string
+  Cluster: string
+  Fqdn: string
+  Cpu: integer
+  Memory: integer
+  PidMode: string
+  IpcMode: string
+  RequiresCompatibilities:
+    - string
+  # Volume definition
+  Volumes:
+    - Name: string
+      DockerVolumeConfiguration:
+        Autoprovision: string
+        Driver: string
+        DriverOpts:
+          - keypair
+      Host:
+        SourcePath: string
+  # Container definition
+  Containers:
+    - Name: string
+      Image: nginx
+      Cpu: integer
+      Memory: integer
+      MemoryReservation: integer
+      # Container port mappings definition
+      PortMappings:
+        - HostPort: intger
+          ContainerPort: integer
+          Protocol: string
+        - HostPort: intger
+          ContainerPort:
+            Blue: integer
+            Green: integer
+          Protocol: string
+      EntryPort:
+        - string
+      Environment:
+        - keypair
+      Secrets:
+        - keypair
+      Command:
+        - string
+      DnsSearchDomains:
+        - string
+      DisableNetworking: boolean
+      DnsServers:
+        - string
+      Links:
+        - string
+      DockerSecurityOptions:
+        - string
+      Essential: boolean
+      Privileged: boolean
+      Hostname: string
+      # Mount point definition
+      MountPoints:
+        - ContainerPath: string
+          SourceVolume: string
+          ReadOnly: boolean
+      StartTimeout: integer
+      StopTimeout: integer
+      DependsOn:
+        - string
+  # Iam service roles definition
+  IamRoles:
+    # Task execution role definition
+    TaskExecutionRole:
+      - Name: string
+        Effect: string
+        Actions:
+          - string
+        Resources:
+          - string
+    # Task role definition
+    TaskRole:
+      - Name: string
+        Effect: string
+        Actions:
+          - string
+        Resources:
+          - string    
+  # Auto scaling definition
+  AutoScaling:
+    MinCapacity: integer
+    MaxCapacity: integer
+    RoleArn: string
+    # Step scaling policy definition
+    StepScalingPolicyConfiguration:
+      - Name: string
+        AdjustmentType: string
+        Cooldown: integer
+        MetricAggregationType: string
+        # Step ajustments definition
+        StepAdjustments:
+          - MetricIntervalLowerBound: integer
+            ScalingAdjustment: integer
+          - MetricIntervalUpperBound: integer
+            ScalingAdjustment: integer
+        # Cloudwatch alarms definition
+        CloudwatchAlarms:
+          - MetricName: string
+            AlarmDescription: string
+            Namespace: string
+            Statistic: string
+            Period: integer
+            EvaluationPeriods: integer
+            Threshold: integer
+            ComparisonOperator: string
+ # Target group definition
+TargetGroups:
+  - Port: integer
+    Container:
+      Name: string
+      Port: integer
+    TargetGroupAttributes:
+      - keypair
+    Protocol: string
+    # Health Check definition
+    HealthCheck:
+      Path: string
+      Matcher: string
+      IntervalSeconds: integer
+      HealthyThresholdCount: integer
+      UnhealthyThresholdCount: integer
+      Protocol: string
+# Listener definition
+Listeners:
+  - Port: integer
+    Protocol: string
+    TargetGroup:
+      Container:
+        Name: string
+        Port: integer
+    # Rule definition
+    Rule:
+      Conditions:
+        - Field: string
+          Values:
+            - string
+    Certificates:
+      - string

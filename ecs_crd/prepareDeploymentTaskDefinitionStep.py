@@ -100,7 +100,7 @@ class PrepareDeploymentTaskDefinitionStep(CanaryReleaseDeployStep):
                 for a in elmt.values():
                     value = str(a)
                 elmt[key] = self.bind_data(value)
-                cfn['DriverOpts'].append(elmt)
+                cfn['Labels'].append(elmt)
                 self._log_information(key='- '+key, value=value, ljust=10, indent=6)
         if 'scope' in item:
             cfn['Scope'] = item['scope']

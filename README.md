@@ -34,7 +34,7 @@ To help you set up your infrastructure, I invite you to visit our github reposit
 
 ### I.2.4 - [AWS Certificat Manager](https://aws.amazon.com/certificate-manager/?nc1=h_ls)
 
-If your service is visible on the internet, which means that the application load balancers are "internet facing", you will have to apply an SSL certificate. For the dynamic provisioning of cerificats, I invite you to use let's encrypt which is free.
+If your service is visible on the internet, which means that the application load balancers are "internet facing", you will have to apply an SSL certificate. For the dynamic provisioning of certificats, I invite you to use let's encrypt which is free.
 
 To help you set up your infrastructure, I invite you to visit our github repository [terraform-module](https://github.com/AdventielFr/terraform-aws-lets-encrypt-renew-certificates)
 
@@ -97,6 +97,16 @@ To undeploy a service, you must use the **undeploy** sub command. The arguments 
 ## V - Decribe deployment file
 
 The description file of a deployment is file in yml format. The format of this file is the following.
+
+### V.0 - How to formulate the deployment ?
+
+The canary deployment is based on a declaration that is defined in a file in Yaml format.It is possible to formulate the file according to your taste. you will find the file reference at the following address
+
+* Reference snake_case : [see reference](references/snake_case_reference.yml)
+
+* Reference camelCase : [see reference](references/camel_case_reference.yml)
+
+* Reference PascalCase: [see reference](references/pascal_case_reference.yml)
 
 ### V.1 - canary tag definition
 

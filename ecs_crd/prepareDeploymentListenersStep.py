@@ -232,7 +232,7 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
         response = client.describe_rules(ListenerArn = listener_rule_infos.listener_arn)
         priorities = []
         for item in response['Rules']:
-            if self.is_int(item['Priority']):
+            if isinstance(item['Priority'], int):
                 priorities.append(int(item['Priority']))
 
         priorities = sorted(priorities)

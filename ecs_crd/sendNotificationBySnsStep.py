@@ -9,7 +9,7 @@ class SendNotificationBySnsStep(CanaryReleaseDeployStep):
     
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        super().__init__(infos, 'Send Notification', logger, with_end_log=False)
+        super().__init__(infos, 'Send Notification', logger, with_end_log=True)
 
     def _find_sns_topic_notifcation(self):
         if 'sns_topic_notifications' in self.configuration['canary']:
@@ -52,4 +52,7 @@ class SendNotificationBySnsStep(CanaryReleaseDeployStep):
                     self.infos.exit_code = 100
                     self.infos.exit_exception = e
                 self.logger.error(self.title, exc_info=True)
+        else:
+           self._log_information(key='No notification to send', value=None)
+
         return FinishDeploymentStep(self.infos, self.logger)

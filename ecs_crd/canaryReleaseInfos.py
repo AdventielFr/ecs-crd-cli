@@ -17,12 +17,10 @@ class ScaleInfos:
         self.desired = 2
         self.wait = 60
 
-
 class StrategyInfos:
     def __init__(self, weight, wait):
         self.weight = weight
         self.wait = wait
-
 
 class PolicyInfos:
     def __init__(self, name, effect, action, resource):
@@ -30,7 +28,6 @@ class PolicyInfos:
         self.effect = effect
         self.action = action
         self.resource = resource
-
 
 class StackInfos:
     def __init__(self):
@@ -56,12 +53,10 @@ class LoadBalancerInfos:
         self.is_elected = False
         self.hosted_zone_id = hosted_zone_id
 
-
 class ListenerRuleInfos:
     def __init__(self, listener_arn, configuration):
         self.listener_arn = listener_arn
         self.configuration = configuration
-
 
 class SecretInfos:
     def __init__(self):
@@ -69,21 +64,11 @@ class SecretInfos:
         self.kms_arn = []
         self.secrets_arn = []
 
-
-class ContainerDefinitionsInfos:
-    def __init__(self):
-        self.ports = []
-        self.image = None
-        self.cpu = 128
-        self.memmory = 128
-        self.environment = []
-        self.secrets = []
-
-
 class CanaryReleaseInfos:
     def __init__(self, environment, region, configuration_file, version_info):
         self.id = uuid.uuid4().hex
         self.sns_topic_notification = None
+        self.account_id = None
         self.action = None
         self.account = None
         self.external_ip = None
@@ -105,15 +90,19 @@ class CanaryReleaseInfos:
         self.configuration_file = configuration_file
         self.strategy_infos = []
         self.init_infos = StackInfos()
-        self.init_infos.stack = self._load_init_cloud_formation_template()
+        self.init_infos.stack = None
         self.green_infos = ReleaseInfos()
-        self.green_infos.stack = self._load_green_cloud_formation_template()
+        self.green_infos.stack = None
         self.blue_infos = None
         self.listener_rules_infos = []
         self.secrets_infos = None
         self.elected_release = None
         self.ecs_crd_version = version_info.version
         self.created_date = datetime.datetime.now().strftime('%FT%T%.000Z')
+
+    def initialize(self):
+        self.init_infos.stack = self._load_init_cloud_formation_template()
+        self.green_infos.stack = self._load_green_cloud_formation_template()
 
     def _load_green_cloud_formation_template(self):
         result = None

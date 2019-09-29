@@ -35,8 +35,7 @@ class DestroyStackStep(CanaryReleaseDeployStep):
             self.infos.exit_code = 8
             self.logger.error(self.title, exc_info=True)
             return self._on_fail()
-            
-
+   
     @abstractmethod
     def _on_success(self):
         pass

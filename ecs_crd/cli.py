@@ -90,7 +90,6 @@ def deploy(
         canary_step = canary_step.execute()
     sys.exit(canary_infos.exit_code)
 
-
 def _common_action(environment, region, configuration_file, configuration_dir, verbose, log_file):
     logger = _create_logger(verbose, log_file)
     parameters = Parameters(logger)
@@ -100,8 +99,8 @@ def _common_action(environment, region, configuration_file, configuration_dir, v
     parameters.configuration_dir = configuration_dir
     parameters.validate()
     canary_infos = CanaryReleaseInfos(parameters.environment, parameters.region, parameters.configuration_file, version_infos)
+    canary_infos.initialize()
     return logger, canary_infos
-
 
 @main.command(help='undeploy the ECS service')
 @click.option('-e', '--environment', required=True, default='stage', help='Environment to deploy.', show_default=True)

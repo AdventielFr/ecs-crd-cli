@@ -106,26 +106,20 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
         cfn = {}
         cfn['Type'] = 'AWS::ApplicationAutoScaling::ScalableTarget'
         properties = {}
-        if 'minimum' in auto_scaling:
+        if 'min_capacity' in auto_scaling:
             properties['MinCapacity'] = int(auto_scaling['minimum'])
         else:
             properties['MinCapacity'] = self.infos.scale_infos.desired
         self._log_information(key = 'MinCapacity', value=properties['MinCapacity'], indent=2)
-        if 'maximum' in auto_scaling:
+        if 'max_capacity' in auto_scaling:
             properties['MaxCapacity'] = int(auto_scaling['maximum'])
         else:
             properties['MaxCapacity'] = self.infos.scale_infos.desired
         self._log_information(key = 'MaxCapacity', value=properties['MaxCapacity'], indent=2)
         
         properties['ResourceId'] = f'service/{self.infos.cluster_name}/{self.infos.service_name}-{self.infos.green_infos.canary_release}'
-        self._log_information(key = 'ResourceId', value=properties['ResourceId'], indent=2)
-        
         properties['ScalableDimension'] = 'ecs:service:DesiredCount'
-        self._log_information(key = 'ScalableDimension', value=properties['ScalableDimension'], indent=2)
-        
         properties['ServiceNamespace'] = 'ecs'
-        self._log_information(key = 'ServiceNamespace', value=properties['ServiceNamespace'], indent=2)
-
         properties['RoleARN'] = self.bind_data(auto_scaling['role_arn'])
         self._log_information(key = 'RoleARN', value=properties['RoleARN'], indent=2)
 
@@ -142,37 +136,45 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
         if 'policy_name' in auto_scaling_policy:
             properties['PolicyName']  = auto_scaling_policy['policy_name']
         self._log_information(key = '- PolicyName', value=properties['PolicyName'], indent=3)
-
         properties['PolicyType'] = 'StepScaling'
         self._log_information(key = 'PolicyType', value=properties['PolicyType'], indent=5)
         properties['ScalingTargetId'] =  {}
         properties['ScalingTargetId']['Ref'] = 'AutoScalingTarget'
         properties['ScalableDimension'] = 'ecs:service:DesiredCount'
-        self._log_information(key = 'ScalableDimension', value=properties['ScalableDimension'], indent=5)
         properties['ServiceNamespace'] = 'ecs'
-        self._log_information(key = 'ServiceNamespace', value=properties['ServiceNamespace'], indent=5)
+
+        cfn['Properties'] = properties
+        self.infos.green_infos.stack['Resources'][f'AutoScalingPolicy{count_policy}'] = cfn
+
+    def _process_step_scaling_policy_configuration(self, properties):
         properties['StepScalingPolicyConfiguration'] = {}
-        self._log_information(key = 'StepScalingPolicyConfiguration', value='', indent=5)
-        step_scaling_policy_configuration = auto_scaling_policy['step_scaling_policy_configuration']
-
         properties['StepScalingPolicyConfiguration']['AdjustmentType'] = 'ChangeInCapacity'
-        if 'adjustment_type' in step_scaling_policy_configuration:
-            properties['StepScalingPolicyConfiguration']['AdjustmentType'] = int(step_scaling_policy_configuration['adjustment_type'])
-        self._log_information(key = 'AdjustmentType', value=properties['StepScalingPolicyConfiguration']['AdjustmentType'], indent=6)
-
-
         properties['StepScalingPolicyConfiguration']['Cooldown'] = 60
-        if 'cooldown' in step_scaling_policy_configuration:
-            properties['StepScalingPolicyConfiguration']['Cooldown'] = int(step_scaling_policy_configuration['cooldown'])
-        self._log_information(key = 'Cooldown', value=properties['StepScalingPolicyConfiguration']['Cooldown'], indent=6)
-
-
         properties['StepScalingPolicyConfiguration']['MetricAggregationType'] = 'Average'
-        if 'metric_aggregation_type' in step_scaling_policy_configuration:
-            properties['StepScalingPolicyConfiguration']['MetricAggregationType'] = step_scaling_policy_configuration['metric_aggregation_type']
-        self._log_information(key = 'MetricAggregationType', value=properties['StepScalingPolicyConfiguration']['MetricAggregationType'], indent=6)
+        if 'step_scaling_policy_configuration' in auto_scaling_policy:
+            step_scaling_policy_configuration = auto_scaling_policy['step_scaling_policy_configuration']
+            if 'adjustment_type' in step_scaling_policy_configuration:
+                properties['StepScalingPolicyConfiguration']['AdjustmentType'] = int(step_scaling_policy_configuration['adjustment_type'])
+            if 'cooldown' in step_scaling_policy_configuration:
+                properties['StepScalingPolicyConfiguration']['Cooldown'] = int(step_scaling_policy_configuration['cooldown'])
+            if 'metric_aggregation_type' in step_scaling_policy_configuration:
+                properties['StepScalingPolicyConfiguration']['MetricAggregationType'] = step_scaling_policy_configuration['metric_aggregation_type']
+            self._process_step_scaling_policy_configuration_step_adjustments(properties, step_scaling_policy_configuration)
 
+        self._log_information(key = 'StepScalingPolicyConfiguration', value='', indent=5)
+        self._log_information(key = 'AdjustmentType', value=properties['StepScalingPolicyConfiguration']['AdjustmentType'], indent=6)
+        self._log_information(key = 'Cooldown', value=properties['StepScalingPolicyConfiguration']['Cooldown'], indent=6)
+        self._log_information(key = 'MetricAggregationType', value=properties['StepScalingPolicyConfiguration']['MetricAggregationType'], indent=6)
         self._log_information(key = 'StepAdjustments', value='', indent=6)
+        for i in properties['StepScalingPolicyConfiguration']['StepAdjustments']:
+            if 'MetricIntervalLowerBound' in i:
+                self._log_information(key = '- MetricIntervalLowerBound', value=i['MetricIntervalLowerBound'], indent=7)
+            if 'MetricIntervalUpperBound' in i:
+                self._log_information(key = '- MetricIntervalUpperBound', value=i['MetricIntervalUpperBound'], indent=7)
+            if 'ScalingAdjustment' in i:
+                self._log_information(key = 'ScalingAdjustment', value=i['ScalingAdjustment'], indent=9)
+
+    def _process_step_scaling_policy_configuration_step_adjustments(self, properties, step_scaling_policy_configuration):
         step_adjustments = []
         if 'step_adjustments' in step_scaling_policy_configuration:
              for e in auto_scaling_policy['step_scaling_policy_configuration']['step_adjustments']:
@@ -193,17 +195,7 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             step_adjustment['MetricIntervalUpperBound'] = 0
             step_adjustment['ScalingAdjustment'] = -1
             step_adjustments.append(step_adjustment)
-      
         properties['StepScalingPolicyConfiguration']['StepAdjustments'] = step_adjustments
-        for i in properties['StepScalingPolicyConfiguration']['StepAdjustments']:
-            if 'MetricIntervalLowerBound' in i:
-                self._log_information(key = '- MetricIntervalLowerBound', value=i['MetricIntervalLowerBound'], indent=7)
-            if 'MetricIntervalUpperBound' in i:
-                self._log_information(key = '- MetricIntervalUpperBound', value=i['MetricIntervalUpperBound'], indent=7)
-            if 'ScalingAdjustment' in i:
-                self._log_information(key = 'ScalingAdjustment', value=i['ScalingAdjustment'], indent=9)
-        cfn['Properties'] = properties
-        self.infos.green_infos.stack['Resources'][f'AutoScalingPolicy{count_policy}'] = cfn
 
     def _process_cloudwatch_alarm(self, alarm, count_policy, count_cloudwatch_alarms):
         cfn = {}
@@ -247,21 +239,14 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
         properties['AlarmActions'].append(alarm_action)
         
         dimensions = []
-        if 'dimensions' in alarm:
-            for item in alarms['dimensions']:
-                dimension = {}
-                dimension['Name'] = item['name']
-                dimension['Value'] = item['Value']
-                dimensions.append(dimension)
-        else:
-            dimension = {}
-            dimension['Name'] = 'ServiceName'
-            dimension['Value'] = f'{self.infos.service_name}-{self.infos.green_infos.canary_release}'
-            dimensions.append(dimension)
-            dimension = {}
-            dimension['Name'] = 'ClusterName'
-            dimension['Value'] = f'{self.infos.cluster_name}'
-            dimensions.append(dimension)
+        dimension = {}
+        dimension['Name'] = 'ServiceName'
+        dimension['Value'] = f'{self.infos.service_name}-{self.infos.green_infos.canary_release}'
+        dimensions.append(dimension)
+        dimension = {}
+        dimension['Name'] = 'ClusterName'
+        dimension['Value'] = f'{self.infos.cluster_name}'
+        dimensions.append(dimension)
 
         properties['Dimensions'] = dimensions
         self._log_information(key = '  Dimensions', value='', indent=6)

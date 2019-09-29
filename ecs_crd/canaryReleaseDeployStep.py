@@ -5,7 +5,8 @@ from abc import ABC, abstractmethod
 import logging
 import yaml
 import time
-
+import datetime
+import re
 
 class CanaryReleaseDeployStep(ABC):
 
@@ -55,28 +56,59 @@ class CanaryReleaseDeployStep(ABC):
             return None
         if self.infos.account_id:
             data = src.replace('{{account_id}}', self.infos.account_id)
+            data = data.replace('{{accountId}}', self.infos.account_id)
+            data = data.replace('{{AccountId}}', self.infos.account_id)
         if self.infos.environment:
             data = data.replace('{{environment}}', self.infos.environment)
+            data = data.replace('{{Environment}}', self.infos.environment)
         if self.infos.region:
             data = data.replace('{{region}}', self.infos.region)
+            data = data.replace('{{Region}}', self.infos.region)
         if self.infos.project:
             data = data.replace('{{project}}', self.infos.project)
+            data = data.replace('{{Project}}', self.infos.project)
         if self.infos.service_name:
             data = data.replace('{{name}}', self.infos.service_name)
+            data = data.replace('{{Name}}', self.infos.service_name)
         if self.infos.service_version:
             data = data.replace('{{version}}', self.infos.service_version)
+            data = data.replace('{{Version}}', self.infos.service_version)
         if self.infos.fqdn:
             data = data.replace('{{fqdn}}', self.infos.fqdn)
+            data = data.replace('{{Fqdn}}', self.infos.fqdn)
         if self.infos.external_ip:
             data = data.replace('{{external_ip}}', self.infos.external_ip)
+            data = data.replace('{{externalIp}}', self.infos.external_ip)
+            data = data.replace('{{ExternalIp}}', self.infos.external_ip)
         return data
 
     def _load_configuration(self):
+        """load configuration"""
         with open(self.infos.configuration_file, 'r') as stream:
-            return yaml.safe_load(stream)
+            result =  self._normalize(yaml.safe_load(stream))
+            return result
 
-    def is_int(self, src):
-        return isinstance(src, int)
+    def _normalize(self, item):
+        """normalize to snake case"""
+        if hasattr(item, 'keys'):
+            result = {}
+            for k in item.keys():
+                result[self._to_snake_case(k)] = self._normalize(item[k])
+            return result
+        if isinstance(item, list):
+            result = []
+            for i in item:
+                result.append(self._normalize(i))
+            return result
+        else:
+            return item
+
+    def _to_snake_case(self, text):
+        """convert to snake case"""
+        if text:
+            str1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', text)
+            return re.sub('([a-z0-9])([A-Z])', r'\1_\2', str1).lower()
+        return None
 
     @abstractmethod
     def _on_execute(self):

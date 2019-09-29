@@ -1,0 +1,164 @@
+# Canary deployment definition
+canary:
+  group: string
+  releases:
+    blue: string
+    green: string
+  # Scale on start definition
+  scale:
+    desired: integer
+    wait: integer
+  # Strategy deployment definition
+  strategy:
+    - weight: integer
+      wait: integer
+# Service definition
+service:
+  Project: string
+  name: string
+  cluster: string
+  fqdn: string
+  cpu: integer
+  memory: integer
+  pid_mode: string
+  ipc_mode: string
+  network_mode: string
+  requires_compatibilities:
+    - string
+  # Volume definition
+  volumes:
+    - name: string
+      docker_volume_configuration:
+        autoprovision: string
+        driver: string
+        driver_opts:
+          - keypair
+        labels:
+          - keypair
+        scope: string
+      host:
+        source_path: string
+  # Container definition
+  containers:
+    - name: string
+      image: nginx
+      cpu: integer
+      memory: integer
+      memory_reservation: integer
+      # Container port mappings definition
+      port_mappings:
+        - host_port: intger
+          container_port: integer
+          protocol: string
+        - host_port: intger
+          container_port:
+            blue: integer
+            green: integer
+          protocol: string
+      entry_port:
+        - string
+      environment:
+        - keypair
+      secrets:
+        - keypair
+      command:
+        - string
+      dns_search_domains:
+        - string
+      disable_networking: boolean
+      dns_servers:
+        - string
+      links:
+        - string
+      docker_security_options:
+        - string
+      essential: boolean
+      privileged: boolean
+      hostname: string
+      # Mount point definition
+      mount_points:
+        - container_path: string
+          source_volume: string
+          read_only: boolean
+      start_timeout: integer
+      stop_timeout: integer
+      depends_on:
+        - string
+  # Iam service roles definition
+  iam_roles:
+    # Task execution role definition
+    task_execution_role:
+      - name: string
+        effect: string
+        actions:
+          - string
+        resources:
+          - string
+    # Task role definition
+    task_role:
+      - name: string
+        effect: string
+        actions:
+          - string
+        resources:
+          - string    
+  # Suto scaling definition
+  auto_scaling:
+    min_capacity: integer
+    max_capacity: integer
+    role_arn: string
+    # Step scaling policy definition
+    step_scaling_policy_configuration:
+      - name: string
+        adjustment_type: string
+        cooldown: integer
+        metric_aggregation_type: string
+        # Step ajustments definition
+        step_adjustments:
+          - metric_interval_lower_bound: integer
+            scaling_adjustment: integer
+          - metric_interval_upper_bound: integer
+            scaling_adjustment: integer
+         # Cloudwatch alarms definition
+        cloudwatch_alarms:
+          - metric_name: string
+            alarm_description: string
+            namespace: string
+            statistic: string
+            period: integer
+            evaluation_periods: integer
+            threshold: integer
+            comparison_operator: string
+# target group definition
+target_groups:
+  - port: integer
+    container:
+      name: string
+      port: integer
+    target_group_attributes:
+      - keypair
+    protocol: string
+    # Health Check definition
+    health_check:
+      path: string
+      matcher: string
+      interval_seconds: integer
+      healthy_threshold_count: integer
+      unhealthy_threshold_count: integer
+      protocol: string
+# Listener definition
+listeners:
+  - port: integer
+    protocol: string
+    target_group:
+      container:
+        name: string
+        port: integer
+    # Rule definition
+    rule:
+      conditions:
+        - field: string
+          values:
+            - string
+    certificates:
+      - string
