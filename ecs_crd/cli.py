@@ -81,7 +81,7 @@ def deploy(
         configuration_dir,
         verbose,
         log_file):
-    logger, canary_infos = _common_action(environment, region, configuration_file, configuration_dir, verbose, log_file, test)
+    logger, canary_infos = _common_action(environment, region, configuration_file, configuration_dir, verbose, log_file)
     canary_infos.action = 'deploy'
     canary_step = PrepareDeploymentGlobalParametersStep(canary_infos, logger)
     while (canary_step):
@@ -102,7 +102,6 @@ def _common_action(environment, region, configuration_file, configuration_dir, v
         configuration_file,
         version_infos.version
     )
-    canary_infos.initialize()
     return logger, canary_infos
 
 @main.command(help='Undeploy the ECS service')

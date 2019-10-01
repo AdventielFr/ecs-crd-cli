@@ -101,12 +101,6 @@ class CanaryReleaseInfos:
         self.secrets_infos = None
         self.elected_release = None
         self.ecs_crd_version = ecs_crd_version
-        
-    def initialize(self):
-        if not self.init_infos.stack:
-           
-        if not self.green_infos.stack:
-            self.green_infos.stack = 
    
     def _load_green_cloud_formation_template(self):
         result = None
