@@ -146,7 +146,7 @@ class CheckGreenHealthStep(CanaryReleaseDeployStep):
         except Exception as e:
             self.logger.error('CheckGreenHealthStep', exc_info=True)
             self.infos.exit_exception = e
-            self.infos.exit_code = 6
+            self.infos.exit_code = 14
             return RollbackChangeRoute53WeightsStep(self.infos, self.logger)
 
     def _find_target_group_arns(self):

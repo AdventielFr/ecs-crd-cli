@@ -45,7 +45,7 @@ class CreateStackStep(CanaryReleaseDeployStep):
         except Exception as e:
             self.logger.error('CreateGreenStackStep', exc_info=True)
             self.infos.exit_exception = e
-            self.infos.exit_code = 3
+            self.infos.exit_code = 12
             return self._on_fail()
 
     def _monitor(self, client):

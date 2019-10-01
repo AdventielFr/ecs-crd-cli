@@ -52,7 +52,7 @@ class ScaleUpServiceStep(CanaryReleaseDeployStep):
         except Exception as e:
             self.logger.error('ScaleUpServiceStep', exc_info=True)
             self.infos.exit_exception = e
-            self.infos.exit_code = 4
+            self.infos.exit_code = 13
             return DestroyGreenStackStep(self.infos, self.logger)
 
     def _find_service_arn(self):

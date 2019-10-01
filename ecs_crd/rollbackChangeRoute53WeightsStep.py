@@ -28,7 +28,7 @@ class RollbackChangeRoute53WeightsStep(CanaryReleaseDeployStep):
         except Exception as e:
             self.logger.error('RollbackChangeRoute53WeightsStep', exc_info=True)
             self.infos.exit_exception = e
-            self.infos.exit_code = 7
+            self.infos.exit_code = 15
             return SendNotificationBySnsStep(self.infos, self.logger)
 
     def _is_ready_to_rollback_weights(self, client):

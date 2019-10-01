@@ -122,7 +122,7 @@ class PrepareDeploymentTaskDefinitionStep(CanaryReleaseDeployStep):
             return PrepareDeploymentTargetGroupsStep(self.infos, self.logger)         
 
         except Exception as e:
-            self.infos.exit_code = 1
+            self.infos.exit_code = 6
             self.infos.exit_exception = e
             self.logger.error(self.title, exc_info=True)
         else:
