@@ -167,9 +167,9 @@ class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
                         # on vérifie qu'il y a une règle pour le
                         if 'rule' not in item:
                             container_name = 'default'
-                            if 'container' in item['target_group']:
+                            if 'container' in item['target_group'] and 'name' in item['target_group']['container']:
                                 container_name = item['target_group']['container']['name']
-                            raise ValueError('Rule is mandatory for listener port:{}, target_group.port:{}, container_name:{}'.format(item['port'], item['target_group']['port'], container_name))
+                            raise ValueError('Rule is mandatory for listener port:{}, target_group.port:{}, container_name:{}'.format(item['port'], item['target_group']['container']['port'], container_name))
                         rule_infos = ListenerRuleInfos(listener['ListenerArn'], item)
                         self.infos.listener_rules_infos.append(rule_infos)
                 break

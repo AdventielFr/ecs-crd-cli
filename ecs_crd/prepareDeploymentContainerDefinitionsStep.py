@@ -13,48 +13,70 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
         """initializes a new instance of the class"""
         super().__init__(infos, f'Prepare {infos.action} ( Container definitions )', logger)
 
-    def _process_container_name(self, item, container):
+    def process_container_name(self, source, target):
         """update the name informations for the current container"""
-        container['Name'] = 'default'
-        if 'name' in item:
-            container['Name'] = item['name']
-        self._log_sub_title('Container "{}"'.format(container["Name"]))
+        self.process_property(
+            source = source,
+            target = target,
+            source_property = 'name',
+            multi = True,
+            parent_property = 'Service.Container',
+            default = 'default',
+            indent = 1
+        )
 
-    def _process_container_image(self, item, container):
+    def process_container_image(self, source, target):
         """update the image informations for the current container"""
-        container['Image'] = self.bind_data('{{account_id}}.dkr.ecr.{{region}}.amazonaws.com/{{name}}:{{version}}') 
-        if 'image' in item:
-            container['Image'] = self.bind_data(item['image'])
-        self._log_information(key='Image', value=container["Image"], indent=1)
+        self.process_property(
+            source = source,
+            target = target,
+            source_property = 'image',
+            parent_property = 'Service.Container',
+            default = '{{account_id}}.dkr.ecr.{{region}}.amazonaws.com/{{name}}:{{version}}',
+            indent = 3
+        )
 
-    def _process_container_cpu(self, item, container):
+    def process_container_cpu(self, source, target):
         """update the cpu informations for the current container"""
-        container['Cpu'] = 128
-        if 'cpu' in item:
-            container['Cpu'] = int(item['cpu'])
-        self._log_information(key='Cpu', value=container["Cpu"], indent=1)
+        self.process_property(
+            source = source,
+            target = target,
+            source_property = 'cpu',
+            parent_property = 'Service.Container',
+            type = int,
+            default = 128,
+            indent = 3
+        )
 
-    def _process_container_memory(self, item, container):
-        """update the memory informations for the current container"""
-        container['Memory'] = 128
-        if 'memory' in item:
-            container['Memory'] = int(item['memory'])
-        self._log_information(
-            key='Memory', value=container["Memory"], indent=1)
+    def process_container_memory(self, source, target):
+        """update the cpu informations for the current container"""
+        self.process_property(
+            source = source,
+            target = target,
+            source_property = 'memory',
+            parent_property = 'Service.Container',
+            type = int,
+            default = 128,
+            indent = 3
+        )
 
-    def _process_container_memory_reservation(self, item, container):
+    def process_container_memory_reservation(self, source, target):
         """update the memory reservation informations for the current container"""
-        if 'memory_reservation' in item:
-            container['MemoryReservation'] = int(item['memory_reservation'])
-            self._log_information(key='Memory Reservation',
-                                  value=container["MemoryReservation"], indent=1)
+        self.process_property(
+            source = source,
+            target = target,
+            source_property = 'memory_reservation',
+            parent_property = 'Service.Container',
+            type = int,
+            indent = 3
+        )
 
-    def _process_container_port_mappings(self, item, container):
+    def process_container_port_mappings(self, source, target):
         """update the port mappings informations for the current container"""
-        if 'port_mappings' in item:
-            container['PortMappings'] = []
-            self._log_information(key='Port mappings', value='', indent=1)
-            for p in item['port_mappings']:
+        if 'port_mappings' in source:
+            target['PortMappings'] = []
+            self._log_information(key='Port mappings', value='', indent=3)
+            for p in source['port_mappings']:
                 port_mapping = {
                                 'HostPort': 0,
                                 'ContainerPort': int(p['container_port'])
@@ -74,45 +96,48 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                 if 'protocol' in p:
                     protocol = p['protocol']
                     port_mapping['Protocol'] = protocol
-                container['PortMappings'].append(port_mapping)
+                target['PortMappings'].append(port_mapping)
                 self._log_information(key='- '+protocol, value='{} -> {}'.format(
-                    host_port, port_mapping['ContainerPort']), indent=2)
+                    host_port, port_mapping['ContainerPort']), indent=4)
 
-    def _process_container_entry_point(self, item, container):
+    def process_container_entry_point(self, source, target):
         """update the entry point informations for the current container"""
-        if 'entry_point' in item:
-            container['EntryPoint'] = ','.join(item['entry_point'])
-            self.logger.info(f'     Entry point : {container["EntryPoint"]}')
+        if 'entry_point' in source:
+            if isinstance(source['entry_point'],list):
+                target['EntryPoint'] = ','.join(source['entry_point'])
+                self._log_information(key='Entry point', value=target["EntryPoint"], indent=3)
+            else:
+                raise ValueError(f'{source["entry_point"]} is not valid EntryPoint for Container.')
 
-    def _process_container_environment(self, item, container):
+    def process_container_environment(self, source, target):
         """update the environment informations for the current container"""
-        container['Environment'] = []
-        if 'environment' in item:
-            for elmt in item['environment']:
+        target['Environment'] = []
+        if 'environment' in source:
+            for elmt in source['environment']:
                 e = {}
                 for k, v in elmt.items():
                     e['Name'] = k
                     e['Value'] = v
                 e['Value'] = self.bind_data(str(v))
-                container['Environment'].append(e)
+                target['Environment'].append(e)
         # ajout variable d'environement par défault
         self._add_default_environment_variable(
-            container, 'AWS_ENVIRONMENT', '{{environment}}')
+            target, 'AWS_ENVIRONMENT', '{{environment}}')
         self._add_default_environment_variable(
-            container, 'AWS_REGION', '{{region}}')
+            target, 'AWS_REGION', '{{region}}')
         self._add_default_environment_variable(
-            container, 'AWS_ACCOUNT_ID', '{{account_id}}')
-        self._log_information(key='Environment', value='', indent=1)
-        for e in container['Environment']:
+            target, 'AWS_ACCOUNT_ID', '{{account_id}}')
+        self._log_information(key='Environment', value='', indent=3)
+        for e in target['Environment']:
             self._log_information(
-                key='- '+e['Name'], value=e['Value'], indent=2)
+                key='- '+e['Name'], value=e['Value'], indent=5)
 
-    def _process_container_secrets(self, item, container):
+    def process_container_secrets(self, source, target):
         """update the secrets informations for the current container"""
-        container['Secrets'] = []
-        if 'secrets' in item:
-            self._log_information(key='Secrets', value='', indent=1)
-            for elmt in item['secrets']:
+        target['Secrets'] = []
+        if 'secrets' in source:
+            self._log_information(key='Secrets', value='', indent=3)
+            for elmt in source['secrets']:
                 #TODO A retravailler
                 e = {}
                 for a in elmt.keys():
@@ -124,46 +149,56 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                 for s in self.infos.secret_infos.secrets:
                     if s['id'] == e['ValueFrom']:
                         e['ValueFrom'] = s['arn']
-                container['Secrets'].append(e)
+                target['Secrets'].append(e)
                 self._log_information(
-                    key='- '+e['Name'], value=e['ValueFrom'], indent=2)
+                    key='- '+e['Name'], value=e['ValueFrom'], indent=5)
 
-    def _process_container_command(self, item, container):
+    def process_container_command(self, source, target):
         """update the command informations for the current container"""
-        if 'command' in item:
-            self._log_information(key='Command', value='', indent=1)
-            container['Command'] = []
-            for e in item['command']:
-                container['Command'].append(e)
-                self._log_information(key='- '+e, value=None, indent=2)
-
-    def _process_container_dns_search_domains(self, item, container):
-        """update the dns search domain informations for the current container"""
-        if 'dns_search_domains' in item:
-            self._log_information(key='Dns Search Domains', value='', indent=1)
-            container['DnsSearchDomains'] = []
-            for e in item['dns_search_domains']:
-                container['DnsSearchDomains'].append(e)
-                self._log_information(key='- '+e, value=None, indent=2)
-
-    def _process_container_disable_networking(self, item, container):
-        """update the disable networking informations for the current container"""
-        if 'disable_networking' in item:
-            if str(item['disable_networking']).lower().strip() == 'true':
-                container['DisableNetworking'] = "true"
+        if 'command' in source:
+            if isinstance(source['command'],list):
+                self._log_information(key='Command', value='', indent=3)
+                target['Command'] = []
+                for e in source['command']:
+                    target['Command'].append(e)
+                    self._log_information(key='- '+e, value=None, indent=5)
             else:
-                container['DisableNetworking'] = "false"
-            self._log_information(
-                key='Disable networking', value=container["DisableNetworking"], ljust=10, indent=1)
+                raise ValueError(f'{source["command"]} is not valid Command for Container.')
 
-    def _process_container_dns_servers(self, item, container):
+    def process_container_dns_search_domains(self, source, target):
+        """update the dns search domain informations for the current container"""
+        if 'dns_search_domains' in source:
+            if isinstance(source['dns_search_domains'], list):
+                self._log_information(key='Dns Search Domains', value='', indent=3)
+                target['DnsSearchDomains'] = []
+                for e in source['dns_search_domains']:
+                    target['DnsSearchDomains'].append(e)
+                    self._log_information(key='- '+e, value=None, indent=5)
+            else:
+                raise ValueError(f'{source["dns_search_domains"]} is not valid DnsSearchDomains for Container.')  
+
+    def process_container_disable_networking(self, source, target):
+        """update the disable networking informations for the current container"""
+        self.process_property(
+            source = source,
+            target = target,
+            source_property = 'disable_networking',
+            parent_property = 'Container',
+            type = bool,
+            indent = 3
+        )
+
+    def process_container_dns_servers(self, source, target):
         """update the dns servers informations for the current container"""
-        if 'dns_servers' in item:
-            self._log_information(key='Dns Servers', value='', indent=1)
-            container['DnsServers'] = []
-            for e in item['dns_servers']:
-                container['DnsServers'].append(e)
-                self._log_information(key='- '+e, value=None, indent=2)
+        if 'dns_servers' in source:
+            if isinstance(source['dns_servers'], list):
+                self._log_information(key='Dns Servers', value='', indent=1)
+                target['DnsServers'] = []
+                for e in source['dns_servers']:
+                    target['DnsServers'].append(e)
+                    self._log_information(key='- '+e, value=None, indent=2)
+            else:
+                raise ValueError(f'{source["dns_servers"]} is not valid DnsServers for Container.')  
 
     def _process_container_links(self, item, container):
         """update the links informations for the current container"""
@@ -228,26 +263,36 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                         key='  Read Only', value=mount_point["ReadOnly"], indent=2)
                 container['MountPoints'].append(mount_point)
 
-    def _process_container_hostname(self, item, container):
+    def process_container_hostname(self, source, target):
         """update the hostname informations for the current container"""
-        if 'hostname' in item:
-            container['Hostname'] = item['hostname']
-            self._log_information(
-                key='Hostname', value=container["Hostname"], indent=1)
+        self.process_property(
+            source = source,
+            target = target,
+            source_property = 'hostname',
+            parent_property = 'Container',
+            indent = 3
+        )
 
-    def _process_container_start_timeout(self, item, container):
+    def process_container_start_timeout(self, source, target):
         """update the start timeout informations for the current container"""
-        if 'start_timeout' in item:
-            container['StartTimeout'] = int(item['start_timeout'])
-            self._log_information(key='Start Timeout',
-                                  value=container["StartTimeout"], indent=1)
-
-    def _process_container_stop_timeout(self, item, container):
+        self.process_property(
+            source = source,
+            target = target,
+            source_property = 'start_timeout',
+            parent_property = 'Container',
+            type = int,
+            indent = 3
+        )
+    def process_container_stop_timeout(self, source, target):
         """update the stop timeout informations for the current container"""
-        if 'stop_timeout' in item:
-            container['StopTimeout'] = int(item['stop_timeout'])
-            self._log_information(key='Stop timeout',
-                                  value=container["StopTimeout"], indent=1)
+        self.process_property(
+            source = source,
+            target = target,
+            source_property = 'stop_timeout',
+            parent_property = 'Container',
+            type = int,
+            indent = 3
+        )
 
     def _process_container_log_configuration(self, item, container):
         container['LogConfiguration'] = {}
@@ -290,29 +335,29 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             cfn = self.infos.green_infos.stack['Resources']['TaskDefinition']['Properties']['ContainerDefinitions']
             for item in self.configuration['service']['containers']:
                 container = {}
-                self._process_container_name(item, container)
-                self._process_container_image(item, container)
-                self._process_container_cpu(item, container)
-                self._process_container_memory(item, container)
-                self._process_container_memory_reservation(item, container)
-                self._process_container_port_mappings(item, container)
-                self._process_container_entry_point(item, container)
-                self._process_container_environment(item, container)
-                self._process_container_secrets(item, container)
-                self._process_container_command(item, container)
-                self._process_container_dns_search_domains(item, container)
-                self._process_container_disable_networking(item, container)
-                self._process_container_dns_servers(item, container)
+                self.process_container_name(item, container)
+                self.process_container_image(item, container)
+                self.process_container_cpu(item, container)
+                self.process_container_memory(item, container)
+                self.process_container_memory_reservation(item, container)
+                self.process_container_port_mappings(item, container)
+                self.process_container_entry_point(item, container)
+                self.process_container_environment(item, container)
+                self.process_container_secrets(item, container)
+                self.process_container_command(item, container)
+                self.process_container_dns_search_domains(item, container)
+                self.process_container_disable_networking(item, container)
+                self.process_container_dns_servers(item, container)
                 self._process_container_docker_security_options(
                     item, container)
                 self._process_container_essential(item, container)
                 self._process_container_links(item, container)
                 self._process_container_privileged(item, container)
                 self._process_container_mount_points(item, container)
-                self._process_container_hostname(item, container)
+                self.process_container_hostname(item, container)
                 self._process_container_log_configuration(item, container)
-                self._process_container_start_timeout(item, container)
-                self._process_container_stop_timeout(item, container)
+                self.process_container_start_timeout(item, container)
+                self.process_container_stop_timeout(item, container)
                 self._process_depends_on(item, container)
                 cfn.append(container)
             self.infos.save()

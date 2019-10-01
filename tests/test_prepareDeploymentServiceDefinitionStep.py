@@ -4,6 +4,7 @@ import logging
 
 from ecs_crd.canaryReleaseInfos import CanaryReleaseInfos
 from ecs_crd.prepareDeploymentServiceDefinitionStep import PrepareDeploymentServiceDefinitionStep
+from ecs_crd.canaryReleaseInfos import ScaleInfos
 
 logger = logging.Logger('mock')
 infos = CanaryReleaseInfos(action='test')
@@ -149,8 +150,9 @@ def test_process_cloudwatch_alarm_alarm_description_empty():
 
 def test_process_cloudwatch_alarm_alarm_description_not_empty():
     source = {}
-    source['alarm_description']='test'
     target = {}
+    target['MetricName'] = 'CPUUtilization'
+    source['alarm_description']='test'
     step.process_cloudwatch_alarm_alarm_description(source, target)
     assert target['AlarmDescription'] == source['alarm_description']
 
@@ -299,4 +301,143 @@ def test_process_scheduling_strategy_valid():
     step.process_scheduling_strategy(source, target)
     assert target['SchedulingStrategy'] == source['scheduling_strategy']
 
+def test_process_application_autoscaling_scalable_target_min_capacity_valid():
+    source = {}
+    target = {}
     
+    # default value
+    step.infos.scale_infos = ScaleInfos()
+    step.infos.scale_infos.desired = 2
+    step.process_application_autoscaling_scalable_target_min_capacity(source, target)
+    assert target['MinCapacity'] == step.infos.scale_infos.desired 
+    
+    # set valude
+    source['min_capacity'] = 1
+    step.process_application_autoscaling_scalable_target_min_capacity(source, target)
+    assert target['MinCapacity'] == source['min_capacity']  
+
+def test_process_application_autoscaling_scalable_target_max_capacity_invalid():
+    source = {}
+    source['max_capacity'] = 'a'
+    target = {}
+    with pytest.raises(ValueError):
+        step.process_application_autoscaling_scalable_target_max_capacity(source, target)
+
+def test_process_application_autoscaling_scalable_target_max_capacity_valid():
+    source = {}
+    target = {}
+    
+    # default value
+    step.infos.scale_infos = ScaleInfos()
+    step.infos.scale_infos.desired = 2
+    step.process_application_autoscaling_scalable_target_max_capacity(source, target)
+    assert target['MaxCapacity'] == step.infos.scale_infos.desired 
+    
+    # set valude
+    source['max_capacity'] = 1
+    step.process_application_autoscaling_scalable_target_max_capacity(source, target)
+    assert target['MaxCapacity'] == source['max_capacity']  
+
+def test_process_application_autoscaling_scalable_target_role_arn_valid():
+    source = {}
+    target = {}
+    source['role_arn'] = 'a'
+    step.process_application_autoscaling_scalable_target_role_arn(source, target)
+    assert target['RoleARN'] == source['role_arn']
+
+def test_process_application_autoscaling_scalable_target_role_arn_required():
+    source = {}
+    target = {}
+    with pytest.raises(ValueError):
+        step.process_application_autoscaling_scalable_target_role_arn(source, target)
+
+def test_process_application_auto_scaling_scaling_policy_policy_type_invalid():
+    source = {}
+    target = {}
+    with pytest.raises(ValueError):
+        source['policy_type']='a'
+        step.process_application_auto_scaling_scaling_policy_policy_type(source, target)
+   
+def test_process_application_auto_scaling_scaling_policy_policy_type_valid():
+    source = {}
+    target = {}
+    
+    source['policy_type']='SimpleScaling'
+    step.process_application_auto_scaling_scaling_policy_policy_type(source, target)
+    assert target['PolicyType'] == source['policy_type']
+
+    source['policy_type']='StepScaling'
+    step.process_application_auto_scaling_scaling_policy_policy_type(source, target)
+    assert target['PolicyType'] == source['policy_type']
+
+    source['policy_type']='TargetTrackingScaling'
+    step.process_application_auto_scaling_scaling_policy_policy_type(source, target)
+    assert target['PolicyType'] == source['policy_type']
+
+def test_process_placement_stategies_strategy_field_required():
+    source = {}
+    target = {}
+    with pytest.raises(ValueError):
+        step.process_placement_stategies_strategy_field(source, target)
+
+def test_process_placement_stategies_strategy_field_valid():
+    source = {}
+    source['field'] ='test'
+    target = {}
+    step.process_placement_stategies_strategy_field(source, target)
+    assert target['Field'] == source['field']
+
+def test_process_placement_stategies_strategy_type_required():
+    source = {}
+    target = {}
+    with pytest.raises(ValueError):
+        step.process_placement_stategies_strategy_type(source, target)
+
+def test_process_placement_stategies_strategy_field_invalid():
+    source = {}
+    source['type']='test'
+    target = {}
+    with pytest.raises(ValueError):
+        step.process_placement_stategies_strategy_type(source, target)
+
+def test_process_placement_stategies_strategy_field_valid():
+    source = {}
+    source['type']='binpack'
+    target = {}
+    step.process_placement_stategies_strategy_type(source, target)
+    assert target['Type'] == source['type']
+
+    source['type']='random'
+    target = {}
+    step.process_placement_stategies_strategy_type(source, target)
+    assert target['Type'] == source['type']
+
+    source['type']='spread'
+    target = {}
+    step.process_placement_stategies_strategy_type(source, target)
+    assert target['Type'] == source['type']
+    
+def test_process_placement_constraints_contraint_type_required():
+    source = {}
+    target = {}
+    with pytest.raises(ValueError):
+        step.process_placement_constraints_contraint_type(source, target)
+
+def test_process_placement_stategies_strategy_type_invalid():
+    source = {}
+    source['type']='test'
+    target = {}
+    with pytest.raises(ValueError):
+        step.process_placement_constraints_contraint_type(source, target)
+
+def test_process_placement_stategies_strategy_type_valid():
+    source = {}
+    source['type']='distinctInstance'
+    target = {}
+    step.process_placement_constraints_contraint_type(source, target)
+    assert target['Type'] == source['type']
+
+    source['type']='memberOf'
+    target = {}
+    step.process_placement_constraints_contraint_type(source, target)
+    assert target['Type'] == source['type']

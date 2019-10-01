@@ -14,22 +14,22 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
         """initializes a new instance of the class"""
         super().__init__(infos, f'Prepare {infos.action} ( Global parameters )', logger)
 
-    def _process_account_id(self):
+    def process_account_id(self):
         """update the AWS account ID informations for the service"""
         self.infos.account_id = boto3.client('sts').get_caller_identity().get('Account')
         self._log_information(key='Account ID', value=self.infos.account_id, ljust=18)
 
-    def _process_canary_group(self):
+    def process_canary_group(self):
         """update the canary group name informations for the service"""
         self.infos.canary_group = self.configuration['canary']['group']
         self._log_information(key='Canary group', value=self.infos.canary_group, ljust=18)
 
-    def _process_external_ip(self):
+    def process_external_ip(self):
         """update the external ip informations for the service"""
         self.infos.external_ip = self._find_external_ip()
         self._log_information(key='External IP', value=self.infos.external_ip, ljust=18)
 
-    def _process_project(self):
+    def process_project(self):
         """update the project name informations for the service"""
         self.infos.project = self.configuration['service']['project']
         self._log_information(key='Project', value=self.infos.project, ljust=18)
@@ -97,8 +97,8 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
         """operation containing the processing performed by this step"""
         try:
             self._log_information(key=f'{self.infos.action} ID', value=self.infos.id, ljust=18)
-            self._process_account_id()
-            self._process_canary_group()
+            self.process_account_id()
+            self.process_canary_group()
             self._process_external_ip()
             self._process_project()
             self._process_service_name()

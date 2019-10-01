@@ -51,59 +51,98 @@ class CanaryReleaseDeployStep(ABC):
         self.logger.info(f'Step Result : {result}')
         self.logger.info('')
 
-    def bind_data(self, src):
-        if not src:
+    def process_property(self, **kwargs):
+        origin = None
+        source = None
+        source_property = None
+        target_property = None
+        parent_property = None
+        type = None
+        pattern = None
+        required = False
+        multi = False
+        default = None
+        indent = 0
+        
+        for k,v in kwargs.items():
+            if k == 'source':
+                source = v
+            if k == 'target':
+                target = v
+            if k == 'source_property':
+                source_property = v
+            if k == 'target_property':
+                target_property = v
+            if k == 'type':
+                type = v
+            if k == 'pattern':
+                pattern = v
+            if k == 'required':
+                required = bool(v)
+            if k == 'default':
+                default = v
+            if k == 'indent':
+                indent = int(v)
+            if k == 'parent_property':
+                parent_property = v
+            if k == 'multi':
+                multi = bool(v)
+        
+        if not target_property:
+            target_property = self._to_pascal_case(source_property)
+        
+        if default and source_property not in source:
+            source[source_property] = default
+        
+        suffix_message = '.'
+        if parent_property:
+            suffix_message = f' for {parent_property}.'
+
+        if source_property in source:
+            if type:
+                if isinstance(source[source_property], type):
+                    target[target_property] = source[source_property]
+                else:
+                    raise ValueError(f'{target_property}: {source[source_property]} is not valid{suffix_message}')
+            else:
+                target[target_property] = self.bind_data(source[source_property])
+            if pattern:
+                val = re.match(pattern, target[target_property])
+                if not val:
+                    raise ValueError(f'{target_property}: {source[source_property]} is not valid{suffix_message}')
+            self._log_information(key = ('- ' if multi else '' )+target_property, value=target[target_property] , indent=indent)
+        else:
+            if required:
+                raise ValueError(f'{target_property} is required{suffix_message}')
+
+    def bind_data(self, source):
+        if not source:
             return None
+        data = source
         if self.infos.account_id:
-            data = src.replace('{{account_id}}', self.infos.account_id)
-            data = data.replace('{{accountId}}', self.infos.account_id)
-            data = data.replace('{{AccountId}}', self.infos.account_id)
+            data = data.replace('{{account_id}}', self.infos.account_id)
         if self.infos.environment:
             data = data.replace('{{environment}}', self.infos.environment)
-            data = data.replace('{{Environment}}', self.infos.environment)
         if self.infos.region:
             data = data.replace('{{region}}', self.infos.region)
-            data = data.replace('{{Region}}', self.infos.region)
         if self.infos.project:
             data = data.replace('{{project}}', self.infos.project)
-            data = data.replace('{{Project}}', self.infos.project)
         if self.infos.service_name:
             data = data.replace('{{name}}', self.infos.service_name)
-            data = data.replace('{{Name}}', self.infos.service_name)
         if self.infos.service_version:
             data = data.replace('{{version}}', self.infos.service_version)
-            data = data.replace('{{Version}}', self.infos.service_version)
         if self.infos.fqdn:
             data = data.replace('{{fqdn}}', self.infos.fqdn)
-            data = data.replace('{{Fqdn}}', self.infos.fqdn)
         if self.infos.external_ip:
             data = data.replace('{{external_ip}}', self.infos.external_ip)
-            data = data.replace('{{externalIp}}', self.infos.external_ip)
-            data = data.replace('{{ExternalIp}}', self.infos.external_ip)
         return data
 
     def _load_configuration(self):
         """load configuration"""
         if self.infos.configuration_file:
             with open(self.infos.configuration_file, 'r') as stream:
-                result = self._normalize(yaml.safe_load(stream))
-                return result
+                return yaml.safe_load(stream)
         return None
-
-    def _normalize(self, item):
-        """normalize to snake case"""
-        if hasattr(item, 'keys'):
-            result = {}
-            for k in item.keys():
-                result[self._to_snake_case(k)] = self._normalize(item[k])
-            return result
-        if isinstance(item, list):
-            result = []
-            for i in item:
-                result.append(self._normalize(i))
-            return result
-        else:
-            return item
 
     def _to_snake_case(self, text):
         """convert to snake case"""
@@ -111,6 +150,9 @@ class CanaryReleaseDeployStep(ABC):
             str1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', text)
             return re.sub('([a-z0-9])([A-Z])', r'\1_\2', str1).lower()
         return None
+
+    def _to_pascal_case(self,text):
+        return ''.join(x.capitalize() or '_' for x in text.split('_'))
 
     @abstractmethod
     def _on_execute(self):

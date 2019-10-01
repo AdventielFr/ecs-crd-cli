@@ -100,13 +100,7 @@ The description file of a deployment is file in yml format. The format of this f
 
 ### V.0 - How to formulate the deployment ?
 
-The canary deployment is based on a declaration that is defined in a file in Yaml format.It is possible to formulate the file according to your taste. you will find the file reference at the following address
-
-* Reference snake_case : [see reference](references/snake_case_reference.yml)
-
-* Reference camelCase : [see reference](references/camel_case_reference.yml)
-
-* Reference PascalCase: [see reference](references/pascal_case_reference.yml)
+The canary deployment is based on a declaration that is defined in a file in Yaml format. The reference file is here [see reference](references/snake_case_reference.yml).
 
 ### V.1 - canary tag definition
 

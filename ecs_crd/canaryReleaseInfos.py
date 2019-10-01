@@ -18,9 +18,13 @@ class ScaleInfos:
         self.wait = 60
 
 class StrategyInfos:
-    def __init__(self, weight, wait):
-        self.weight = weight
-        self.wait = wait
+    def __init__(self, **kwargs):
+        self.weight = None
+        self.wait = None
+        keys = self.__dict__.keys()
+        for k, v in kwargs.items():
+            if k in keys:
+                self.__dict__[k] = v
 
 class PolicyInfos:
     def __init__(self, name, effect, action, resource):
@@ -89,24 +93,27 @@ class CanaryReleaseInfos:
         self.configuration_file = None
         self.strategy_infos = []
         self.init_infos = StackInfos()
-        self.init_infos.stack = self._load_init_cloud_formation_template()
+        self.init_infos.stack = None
         self.green_infos = ReleaseInfos()
-        self.green_infos.stack = self._load_green_cloud_formation_template()
+        self.green_infos.stack = None
         self.blue_infos = None
         self.listener_rules_infos = []
         self.secrets_infos = None
         self.elected_release = None
         self.ecs_crd_version = None
         self.green_infos
-
+        self.test = True
+   
         keys = self.__dict__.keys()
         for k, v in kwargs.items():
             if k in keys:
                 self.__dict__[k] = v
 
     def initialize(self):
-        self.init_infos.stack = self._load_init_cloud_formation_template()
-        self.green_infos.stack = self._load_green_cloud_formation_template()
+        if not self.init_infos.stack:
+            self.init_infos.stack = self._load_init_cloud_formation_template()
+        if not self.green_infos.stack:
+            self.green_infos.stack = self._load_green_cloud_formation_template()
    
     def _load_green_cloud_formation_template(self):
         result = None

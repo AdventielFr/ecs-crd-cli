@@ -90,7 +90,6 @@ class ChangeRoute53WeightsStep(CanaryReleaseDeployStep):
             self.infos.strategy_infos = tmp
         return result
 
-
 class CheckGreenHealthStep(CanaryReleaseDeployStep):
     """ Check health status of Green's """
 

@@ -33,11 +33,11 @@ class Parameters:
 
     def validate(self):
         if not self.environment:
-            raise ValueError(f'environment is mandatory.')
+            raise ValueError(f'environment is required.')
         if self.environment not in self.environments:
             raise ValueError(f'{self.environment} is not valid environment.')
         if not self.region:
-            raise ValueError(f'region is mandatory.')
+            raise ValueError(f'region is required.')
         if self.region not in self.regions:
             raise ValueError(f'{self.region} is not valid aws region.')
 
@@ -68,13 +68,13 @@ class Parameters:
 def main():
     pass
 
-
 @main.command(help='deploy the ECS service')
 @click.option('-e', '--environment', required=True, default='stage', help='Environment to deploy.', show_default=True)
 @click.option('-r', '--region', required=True, default='eu-west-3', help='Amazon Web Service region used to deploy ECS service.', show_default=True)
 @click.option('-f', '--configuration-file', required=False, help='deployment configuration file.')
 @click.option('-d', '--configuration-dir', required=False, help='directory to find the deployment configuration file.')
 @click.option('--verbose', is_flag=True, default=False, help='activate verbose log.')
+@click.option('--test', is_flag=True, default=False, help='activate verbose log.')
 @click.option('--log-file', required=False, help='output log file result.')
 def deploy(
         environment,
@@ -82,15 +82,16 @@ def deploy(
         configuration_file,
         configuration_dir,
         verbose,
-        log_file):
-    logger, canary_infos = _common_action(environment, region, configuration_file, configuration_dir, verbose, log_file)
+        log_file,
+        test):
+    logger, canary_infos = _common_action(environment, region, configuration_file, configuration_dir, verbose, log_file, test)
     canary_infos.action = 'deploy'
     canary_step = PrepareDeploymentGlobalParametersStep(canary_infos, logger)
     while (canary_step):
         canary_step = canary_step.execute()
     sys.exit(canary_infos.exit_code)
 
-def _common_action(environment, region, configuration_file, configuration_dir, verbose, log_file):
+def _common_action(environment, region, configuration_file, configuration_dir, verbose, log_file, test):
     logger = _create_logger(verbose, log_file)
     parameters = Parameters(logger)
     parameters.environment = environment
@@ -102,7 +103,8 @@ def _common_action(environment, region, configuration_file, configuration_dir, v
         environment = parameters.environment,
         region = parameters.region,
         configuration_file = configuration_file,
-        ecs_crd_version = version_infos
+        ecs_crd_version = version_infos.version,
+        test = test
     )
     canary_infos.initialize()
     return logger, canary_infos
