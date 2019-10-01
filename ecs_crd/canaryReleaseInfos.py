@@ -69,7 +69,7 @@ class SecretInfos:
         self.secrets_arn = []
 
 class CanaryReleaseInfos:
-    def __init__(self, **kwargs):
+    def __init__(self, environment, region, configuration_file, ecs_crd_version, test):
         self.id = uuid.uuid4().hex
         self.sns_topic_notification = None
         self.account_id = None
@@ -80,8 +80,8 @@ class CanaryReleaseInfos:
         self.canary_group = None
         self.cluster_name = None
         self.cluster = None
-        self.region = None
-        self.environment = None
+        self.region = region
+        self.environment = environment
         self.project = None
         self.service_name = None
         self.service_version = None
@@ -90,30 +90,23 @@ class CanaryReleaseInfos:
         self.hosted_zone_id = None
         self.vpc_id = None
         self.scale_infos = None
-        self.configuration_file = None
+        self.configuration_file = configuration_file
         self.strategy_infos = []
         self.init_infos = StackInfos()
-        self.init_infos.stack = None
+        self.init_infos.stack = self._load_init_cloud_formation_template()
         self.green_infos = ReleaseInfos()
-        self.green_infos.stack = None
+        self.green_infos.stack = self._load_green_cloud_formation_template()
         self.blue_infos = None
         self.listener_rules_infos = []
         self.secrets_infos = None
         self.elected_release = None
-        self.ecs_crd_version = None
-        self.green_infos
-        self.test = False
-   
-        keys = self.__dict__.keys()
-        for k, v in kwargs.items():
-            if k in keys:
-                self.__dict__[k] = v
-
+        self.ecs_crd_version = ecs_crd_version
+        
     def initialize(self):
         if not self.init_infos.stack:
-            self.init_infos.stack = self._load_init_cloud_formation_template()
+           
         if not self.green_infos.stack:
-            self.green_infos.stack = self._load_green_cloud_formation_template()
+            self.green_infos.stack = 
    
     def _load_green_cloud_formation_template(self):
         result = None

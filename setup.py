@@ -50,7 +50,7 @@ setup (
         'urllib3==1.25.3',
         'webencodings==0.5.1'
     ],
-    packages = find_packages(),
+    packages = find_packages(exclude=["tests/*"]),
     package_data = {'': ['ecs_crd/cfn_*_release_deploy.json']},
     scripts = [
         'bin/ecs-crd'

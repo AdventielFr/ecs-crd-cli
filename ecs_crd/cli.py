@@ -74,15 +74,13 @@ def main():
 @click.option('-d', '--configuration-dir', required=False, help='directory to find the deployment configuration file.')
 @click.option('--verbose', is_flag=True, default=False, help='activate verbose log.')
 @click.option('--log-file', required=False, help='output log file result.')
-@click.option('--test', is_flag=True, default=False, help='activate verbose log.')
 def deploy(
         environment,
         region,
         configuration_file,
         configuration_dir,
         verbose,
-        log_file,
-        test):
+        log_file):
     logger, canary_infos = _common_action(environment, region, configuration_file, configuration_dir, verbose, log_file, test)
     canary_infos.action = 'deploy'
     canary_step = PrepareDeploymentGlobalParametersStep(canary_infos, logger)
@@ -90,7 +88,7 @@ def deploy(
         canary_step = canary_step.execute()
     sys.exit(canary_infos.exit_code)
 
-def _common_action(environment, region, configuration_file, configuration_dir, verbose, log_file, test):
+def _common_action(environment, region, configuration_file, configuration_dir, verbose, log_file):
     logger = _create_logger(verbose, log_file)
     parameters = Parameters(logger)
     parameters.environment = environment
@@ -99,11 +97,10 @@ def _common_action(environment, region, configuration_file, configuration_dir, v
     parameters.configuration_dir = configuration_dir
     parameters.validate()
     canary_infos = CanaryReleaseInfos(
-        environment = parameters.environment,
-        region = parameters.region,
-        configuration_file = configuration_file,
-        ecs_crd_version = version_infos.version,
-        test = test
+        parameters.environment,
+        parameters.region,
+        configuration_file,
+        version_infos.version
     )
     canary_infos.initialize()
     return logger, canary_infos
