@@ -60,7 +60,7 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
         self._log_information(key='Values', value='', indent=5)
         condition[name]['Values'] = []
         for elmt in item['values']:
-            data = self.bind_data(elmt)
+            data = self._bind_data(elmt)
             self._log_information(key='- '+data, value=None, indent=6)
             condition[name]['Values'].append(data)
         # unique
@@ -77,7 +77,7 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
 
         if condition['Field'] == 'http-header':
             self._convert_2_condition_generic(item, condition, 'HttpHeaderConfig')
-            data = self.bind_data(item['name'])
+            data = self._bind_data(item['name'])
             condition['HttpHeaderConfig']['HttpHeaderName'] = data
             self._log_information(key='Name', value=data, indent=5)
 
@@ -189,7 +189,7 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
             response = client.list_certificates()
             for cert in response['CertificateSummaryList']:
                 for certificate in listener_infos['certificates']:
-                    if cert['DomainName'] == self.bind_data(certificate):
+                    if cert['DomainName'] == self._bind_data(certificate):
                         result.append(cert)
         return result
 

@@ -13,9 +13,9 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
         """initializes a new instance of the class"""
         super().__init__(infos, f'Prepare {infos.action} ( Container definitions )', logger)
 
-    def process_container_name(self, source, target):
+    def _process_container_name(self, source, target):
         """update the name informations for the current container"""
-        self.process_property(
+        self._process_property(
             source = source,
             target = target,
             source_property = 'name',
@@ -25,9 +25,9 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             indent = 1
         )
 
-    def process_container_image(self, source, target):
+    def _process_container_image(self, source, target):
         """update the image informations for the current container"""
-        self.process_property(
+        self._process_property(
             source = source,
             target = target,
             source_property = 'image',
@@ -36,9 +36,9 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             indent = 3
         )
 
-    def process_container_cpu(self, source, target):
+    def _process_container_cpu(self, source, target):
         """update the cpu informations for the current container"""
-        self.process_property(
+        self._process_property(
             source = source,
             target = target,
             source_property = 'cpu',
@@ -48,9 +48,9 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             indent = 3
         )
 
-    def process_container_memory(self, source, target):
+    def _process_container_memory(self, source, target):
         """update the cpu informations for the current container"""
-        self.process_property(
+        self._process_property(
             source = source,
             target = target,
             source_property = 'memory',
@@ -60,9 +60,9 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             indent = 3
         )
 
-    def process_container_memory_reservation(self, source, target):
+    def _process_container_memory_reservation(self, source, target):
         """update the memory reservation informations for the current container"""
-        self.process_property(
+        self._process_property(
             source = source,
             target = target,
             source_property = 'memory_reservation',
@@ -71,7 +71,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             indent = 3
         )
 
-    def process_container_port_mappings(self, source, target):
+    def _process_container_port_mappings(self, source, target):
         """update the port mappings informations for the current container"""
         if 'port_mappings' in source:
             target['PortMappings'] = []
@@ -100,7 +100,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                 self._log_information(key='- '+protocol, value='{} -> {}'.format(
                     host_port, port_mapping['ContainerPort']), indent=4)
 
-    def process_container_entry_point(self, source, target):
+    def _process_container_entry_point(self, source, target):
         """update the entry point informations for the current container"""
         if 'entry_point' in source:
             if isinstance(source['entry_point'],list):
@@ -109,7 +109,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             else:
                 raise ValueError(f'{source["entry_point"]} is not valid EntryPoint for Container.')
 
-    def process_container_environment(self, source, target):
+    def _process_container_environment(self, source, target):
         """update the environment informations for the current container"""
         target['Environment'] = []
         if 'environment' in source:
@@ -118,7 +118,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                 for k, v in elmt.items():
                     e['Name'] = k
                     e['Value'] = v
-                e['Value'] = self.bind_data(str(v))
+                e['Value'] = self._bind_data(str(v))
                 target['Environment'].append(e)
         # ajout variable d'environement par défault
         self._add_default_environment_variable(
@@ -132,7 +132,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             self._log_information(
                 key='- '+e['Name'], value=e['Value'], indent=5)
 
-    def process_container_secrets(self, source, target):
+    def _process_container_secrets(self, source, target):
         """update the secrets informations for the current container"""
         target['Secrets'] = []
         if 'secrets' in source:
@@ -145,7 +145,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                 e['ValueFrom'] = None
                 for a in elmt.values():
                     e['ValueFrom'] = a
-                    e['ValueFrom'] = self.bind_data(e['ValueFrom'])
+                    e['ValueFrom'] = self._bind_data(e['ValueFrom'])
                 for s in self.infos.secret_infos.secrets:
                     if s['id'] == e['ValueFrom']:
                         e['ValueFrom'] = s['arn']
@@ -153,7 +153,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                 self._log_information(
                     key='- '+e['Name'], value=e['ValueFrom'], indent=5)
 
-    def process_container_command(self, source, target):
+    def _process_container_command(self, source, target):
         """update the command informations for the current container"""
         if 'command' in source:
             if isinstance(source['command'],list):
@@ -165,7 +165,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             else:
                 raise ValueError(f'{source["command"]} is not valid Command for Container.')
 
-    def process_container_dns_search_domains(self, source, target):
+    def _process_container_dns_search_domains(self, source, target):
         """update the dns search domain informations for the current container"""
         if 'dns_search_domains' in source:
             if isinstance(source['dns_search_domains'], list):
@@ -177,9 +177,9 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             else:
                 raise ValueError(f'{source["dns_search_domains"]} is not valid DnsSearchDomains for Container.')  
 
-    def process_container_disable_networking(self, source, target):
+    def _process_container_disable_networking(self, source, target):
         """update the disable networking informations for the current container"""
-        self.process_property(
+        self._process_property(
             source = source,
             target = target,
             source_property = 'disable_networking',
@@ -188,7 +188,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             indent = 3
         )
 
-    def process_container_dns_servers(self, source, target):
+    def _process_container_dns_servers(self, source, target):
         """update the dns servers informations for the current container"""
         if 'dns_servers' in source:
             if isinstance(source['dns_servers'], list):
@@ -247,10 +247,10 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             container['MountPoints'] = []
             for e in item['mount_points']:
                 mount_point = {}
-                mount_point['ContainerPath'] = self.bind_data(e['container_path'])
+                mount_point['ContainerPath'] = self._bind_data(e['container_path'])
                 self._log_information(
                     key='- Container Path', value=mount_point["ContainerPath"], indent=2)
-                mount_point['SourceVolume'] = self.bind_data(e['source_volume'])
+                mount_point['SourceVolume'] = self._bind_data(e['source_volume'])
                 self._log_information(
                     key='  Source Volume', value=mount_point["SourceVolume"], indent=2)
                 mount_point['ReadOnly'] = "false"
@@ -263,9 +263,9 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                         key='  Read Only', value=mount_point["ReadOnly"], indent=2)
                 container['MountPoints'].append(mount_point)
 
-    def process_container_hostname(self, source, target):
+    def _process_container_hostname(self, source, target):
         """update the hostname informations for the current container"""
-        self.process_property(
+        self._process_property(
             source = source,
             target = target,
             source_property = 'hostname',
@@ -273,9 +273,9 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             indent = 3
         )
 
-    def process_container_start_timeout(self, source, target):
+    def _process_container_start_timeout(self, source, target):
         """update the start timeout informations for the current container"""
-        self.process_property(
+        self._process_property(
             source = source,
             target = target,
             source_property = 'start_timeout',
@@ -283,9 +283,9 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             type = int,
             indent = 3
         )
-    def process_container_stop_timeout(self, source, target):
+    def _process_container_stop_timeout(self, source, target):
         """update the stop timeout informations for the current container"""
-        self.process_property(
+        self._process_property(
             source = source,
             target = target,
             source_property = 'stop_timeout',
@@ -333,33 +333,32 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
         try:
             self.infos.secret_infos = self._find_secrets_task_informations()
             cfn = self.infos.green_infos.stack['Resources']['TaskDefinition']['Properties']['ContainerDefinitions']
-            for item in self.configuration['service']['containers']:
-                container = {}
-                self.process_container_name(item, container)
-                self.process_container_image(item, container)
-                self.process_container_cpu(item, container)
-                self.process_container_memory(item, container)
-                self.process_container_memory_reservation(item, container)
-                self.process_container_port_mappings(item, container)
-                self.process_container_entry_point(item, container)
-                self.process_container_environment(item, container)
-                self.process_container_secrets(item, container)
-                self.process_container_command(item, container)
-                self.process_container_dns_search_domains(item, container)
-                self.process_container_disable_networking(item, container)
-                self.process_container_dns_servers(item, container)
-                self._process_container_docker_security_options(
-                    item, container)
-                self._process_container_essential(item, container)
-                self._process_container_links(item, container)
-                self._process_container_privileged(item, container)
-                self._process_container_mount_points(item, container)
-                self.process_container_hostname(item, container)
-                self._process_container_log_configuration(item, container)
-                self.process_container_start_timeout(item, container)
-                self.process_container_stop_timeout(item, container)
-                self._process_depends_on(item, container)
-                cfn.append(container)
+            for source in self.configuration['service']['containers']:
+                target = {}
+                self._process_container_name(source, target)
+                self._process_container_image(source, target)
+                self._process_container_cpu(source, target)
+                self._process_container_memory(source, target)
+                self._process_container_memory_reservation(source, target)
+                self._process_container_port_mappings(source, target)
+                self._process_container_entry_point(source, target)
+                self._process_container_environment(source, target)
+                self._process_container_secrets(source, target)
+                self._process_container_command(source, target)
+                self._process_container_dns_search_domains(source, target)
+                self._process_container_disable_networking(source, target)
+                self._process_container_dns_servers(source, target)
+                self._process_container_docker_security_options(source, target)
+                self._process_container_essential(source, target)
+                self._process_container_links(source, target)
+                self._process_container_privileged(source, target)
+                self._process_container_mount_points(source, target)
+                self._process_container_hostname(source, target)
+                self._process_container_log_configuration(source, target)
+                self._process_container_start_timeout(source, target)
+                self._process_container_stop_timeout(source, target)
+                self._process_depends_on(source, target)
+                cfn.append(target)
             self.infos.save()
             return PrepareDeploymentServiceDefinitionStep(self.infos, self.logger)
 
@@ -370,13 +369,13 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
         else:
             return None
 
-    def _add_default_environment_variable(self, container, key, value):
+    def _add_default_environment_variable(self, target, key, value):
         """add a new default environment variables if not exists"""
-        if not any(filter(lambda x: x['Name'] == key, container['Environment'])):
+        if not any(filter(lambda x: x['Name'] == key, target['Environment'])):
             env = {}
             env['Name'] = key
-            env['Value'] = self.bind_data(value)
-            container['Environment'].append(env)
+            env['Value'] = self._bind_data(value)
+            target['Environment'].append(env)
 
     def _find_secrets_task_informations(self):
         """find secret task information for vault resolution in excution task role."""
@@ -386,7 +385,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
         for container_infos in self.configuration['service']['containers']:
             if 'secrets' in container_infos:
                 for item in container_infos['secrets']:
-                    format = self.bind_data(str(item)).replace('\'', '"')
+                    format = self._bind_data(str(item)).replace('\'', '"')
                     j = json.loads(format)
                     o.append(j)
         # no secrets

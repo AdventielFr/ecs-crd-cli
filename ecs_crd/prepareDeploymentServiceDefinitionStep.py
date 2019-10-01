@@ -11,9 +11,9 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
         """initializes a new instance of the class"""
         super().__init__(infos, f'Prepare {infos.action} ( Service definition )', logger)
 
-    def process_scheduling_strategy(self, source, target):
+    def _process_scheduling_strategy(self, source, target):
         """update the sceduling stratégy informations for the service"""
-        self.process_property(
+        self._process_property(
             source = source,
             target = target,
             pattern= 'DAEMON|REPLICA',
@@ -22,9 +22,9 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 1
         )
     
-    def process_platform_version(self, source, target):
+    def _process_platform_version(self, source, target):
         """update the plaform version informations for the service"""
-        self.process_property(
+        self._process_property(
             source = source,
             target = target,
             source_property = 'platform_version',
@@ -32,20 +32,20 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 1
         )
   
-    def process_placement_constraints(self, source, target):
+    def _process_placement_constraints(self, source, target):
         """update the placement constraintes informations for the service"""
         if 'placement_constraints' in source:
             self._log_information(key='Placement Contraints', value='',indent=1)
             placement_constraints = []
             for item in source['placement_constraints']:
                 constraint = {}
-                self.process_placement_constraints_contraint_type(item, constraint)
-                self.process_placement_constraints_contraint_expression(item, constraint)
+                self._process_placement_constraints_contraint_type(item, constraint)
+                self._process_placement_constraints_contraint_expression(item, constraint)
                 placement_constraints.append(constraint)
             target['PlacementConstraints'] = placement_constraints
 
-    def process_placement_constraints_contraint_type(self, source, target):
-        self.process_property(
+    def _process_placement_constraints_contraint_type(self, source, target):
+        self._process_property(
             source = source,
             target = target,
             pattern= 'distinctInstance|memberOf',
@@ -56,8 +56,8 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 4
         )
 
-    def process_placement_constraints_contraint_expression(self, origin, target):
-        self.process_property(
+    def _process_placement_constraints_contraint_expression(self, origin, target):
+        self._process_property(
             source = source,
             target = target,
             source_property = 'expression',
@@ -65,20 +65,20 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 4
         )
     
-    def process_placement_stategies(self, source, properties):
+    def _process_placement_stategies(self, source, properties):
         """update the placement strategies informations for the service"""
         if 'placement_stategies' in source:
             self._log_information(key='Placement Strategies',value='', ljust=10, indent=1)
             placement_stategies = []
             for item in source['placement_stategies']:
                 strategy = {}
-                self.process_placement_stategies_strategy_field(item,strategy)
-                self.process_placement_stategies_strategy_type(item, strategy)
+                self._process_placement_stategies_strategy_field(item,strategy)
+                self._process_placement_stategies_strategy_type(item, strategy)
                 placement_stategies.append(strategy)
             properties['PlacementStrategies'] = placement_stategies
     
-    def process_placement_stategies_strategy_field(self,source, target):
-        self.process_property(
+    def _process_placement_stategies_strategy_field(self,source, target):
+        self._process_property(
             source = source,
             target = target,
             source_property = 'field',
@@ -88,8 +88,8 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 2
         )
 
-    def process_placement_stategies_strategy_type(self,source, target):
-        self.process_property(
+    def _process_placement_stategies_strategy_type(self,source, target):
+        self._process_property(
             source = source,
             target = target,
             source_property = 'type',
@@ -116,17 +116,17 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
                     definition['TargetGroupArn']['Ref'] = "TargetGroup{}".format(''.join(id.capitalize() for id in w.split('_')))
                     cfn.append(definition)
 
-    def process_auto_scaling(self, source):            
+    def _process_auto_scaling(self, source):            
         if 'auto_scaling' in source:
             self._log_information(key = "AutoScaling", value='', indent=1)
             source = source['auto_scaling']
-            self.process_application_autoscaling_scalable_target(source)
+            self._process_application_autoscaling_scalable_target(source)
             count = 1
             for item in source['auto_scaling_policies']:
-                self.process_application_auto_scaling_scaling_policy(item, count)
+                self._process_application_auto_scaling_scaling_policy(item, count)
 
-    def process_application_autoscaling_scalable_target_min_capacity(self, source, target):
-       self.process_property(
+    def _process_application_autoscaling_scalable_target_min_capacity(self, source, target):
+       self._process_property(
             source = source,
             target = target,
             source_property = 'min_capacity',
@@ -136,8 +136,8 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 2
         )
 
-    def process_application_autoscaling_scalable_target_max_capacity(self, source, target):
-        self.process_property(
+    def _process_application_autoscaling_scalable_target_max_capacity(self, source, target):
+        self._process_property(
             source = source,
             target = target,
             source_property = 'max_capacity',
@@ -147,8 +147,8 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 2
         )
 
-    def process_application_autoscaling_scalable_target_role_arn(self, source, target):
-        self.process_property(
+    def _process_application_autoscaling_scalable_target_role_arn(self, source, target):
+        self._process_property(
             source = source,
             target = target,
             source_property = 'role_arn',
@@ -158,16 +158,16 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 2
         )
 
-    def process_application_autoscaling_scalable_target(self, source):
+    def _process_application_autoscaling_scalable_target(self, source):
         cfn = {}
         cfn['Type'] = 'AWS::ApplicationAutoScaling::ScalableTarget'
         target = {}
         # min_capacity
-        self.process_application_autoscaling_scalable_target_min_capacity(source, target)
+        self._process_application_autoscaling_scalable_target_min_capacity(source, target)
         # max_capacity
-        self.process_application_autoscaling_scalable_target_max_capacity(source, target)
+        self._process_application_autoscaling_scalable_target_max_capacity(source, target)
         # role_arn
-        self.process_application_autoscaling_scalable_target_role_arn(source, target)
+        self._process_application_autoscaling_scalable_target_role_arn(source, target)
         target['ResourceId'] = f'service/{self.infos.cluster_name}/{self.infos.service_name}-{self.infos.green_infos.canary_release}'
         target['ScalableDimension'] = 'ecs:service:DesiredCount'
         target['ServiceNamespace'] = 'ecs'
@@ -175,8 +175,8 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
         cfn['DependsOn'] = 'Service'
         self.infos.green_infos.stack['Resources']['AutoScalingTarget'] = cfn
 
-    def process_application_auto_scaling_scaling_policy_policy_name(self, source, target, count):
-        self.process_property(
+    def _process_application_auto_scaling_scaling_policy_policy_name(self, source, target, count):
+        self._process_property(
             source = source,
             target = target,
             source_property = 'policy_name',
@@ -186,8 +186,8 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 3
         )
 
-    def process_application_auto_scaling_scaling_policy_policy_type(self, source, target):
-        self.process_property(
+    def _process_application_auto_scaling_scaling_policy_policy_type(self, source, target):
+        self._process_property(
             source = source,
             target = target,
             source_property = 'policy_type',
@@ -197,28 +197,28 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 5
         )
 
-    def process_application_auto_scaling_scaling_policy(self, source, count):
+    def _process_application_auto_scaling_scaling_policy(self, source, count):
         cfn = {}
         self._log_information(key = 'AutoScalingPolicies', value= '', indent=2)
         cfn['Type'] = 'AWS::ApplicationAutoScaling::ScalingPolicy'
         target = {}
         # policy_name
-        self.process_application_auto_scaling_scaling_policy_policy_name(source, target, count)
+        self._process_application_auto_scaling_scaling_policy_policy_name(source, target, count)
         # policy_type
-        self.process_application_auto_scaling_scaling_policy_policy_type(source, target)
+        self._process_application_auto_scaling_scaling_policy_policy_type(source, target)
         target['ScalingTargetId'] =  {}
         target['ScalingTargetId']['Ref'] = 'AutoScalingTarget'
         target['ScalableDimension'] = 'ecs:service:DesiredCount'
         target['ServiceNamespace'] = 'ecs'
         
-        self.process_step_scaling_policy_configuration(source, target)
-        self.process_cloudwatch_alarms(source, target, count)
+        self._process_step_scaling_policy_configuration(source, target)
+        self._process_cloudwatch_alarms(source, target, count)
         cfn['Properties'] = target
         self.infos.green_infos.stack['Resources'][f'AutoScalingPolicy{count}'] = cfn
 
-    def process_step_scaling_policy_configuration_adjustment_type(self, source, target):
+    def _process_step_scaling_policy_configuration_adjustment_type(self, source, target):
         """process step_scaling_policy_configuration.adjustment_type"""
-        self.process_property(
+        self._process_property(
             source = source,
             target = target,
             source_property = 'adjustment_type',
@@ -228,9 +228,9 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 6
         )
        
-    def process_step_scaling_policy_configuration_cooldown(self, source, target):
+    def _process_step_scaling_policy_configuration_cooldown(self, source, target):
         """process step_scaling_policy_configuration.cooldown"""
-        self.process_property(
+        self._process_property(
             source = source,
             target = target,
             source_property = 'cooldown',
@@ -240,9 +240,9 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 6
         )
    
-    def process_step_scaling_policy_configuration_metric_aggregation_type(self, source, target):
+    def _process_step_scaling_policy_configuration_metric_aggregation_type(self, source, target):
         """process step_scaling_policy_configuration.metric_aggregation_type"""
-        self.process_property(
+        self._process_property(
             source = source,
             target = target,
             source_property = 'metric_aggregation_type',
@@ -252,24 +252,24 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 6
         )
       
-    def process_step_scaling_policy_configuration(self, source, target):
+    def _process_step_scaling_policy_configuration(self, source, target):
         if 'step_scaling_policy_configuration' not in source:
             raise ValueError('The StepScalingPolicyConfiguration is required')
         sub_source = source['step_scaling_policy_configuration']   
         sub_target = {}
         self._log_information(key = 'StepScalingPolicyConfiguration', value='', indent=5)
         # adjustment_type
-        self.process_step_scaling_policy_configuration_adjustment_type(sub_source, sub_target)
+        self._process_step_scaling_policy_configuration_adjustment_type(sub_source, sub_target)
 
         # cooldown
-        self.process_step_scaling_policy_configuration_cooldown(sub_source,sub_target)
+        self._process_step_scaling_policy_configuration_cooldown(sub_source,sub_target)
         # metric_aggregation_type
-        self.process_step_scaling_policy_configuration_metric_aggregation_type(sub_source, sub_target)
+        self._process_step_scaling_policy_configuration_metric_aggregation_type(sub_source, sub_target)
         # step_adjustments
-        self.process_step_scaling_policy_configuration_step_adjustments(sub_source, sub_target)
+        self._process_step_scaling_policy_configuration_step_adjustments(sub_source, sub_target)
         target['StepScalingPolicyConfiguration'] = sub_target
 
-    def process_step_scaling_policy_configuration_step_adjustments(self, source, target):
+    def _process_step_scaling_policy_configuration_step_adjustments(self, source, target):
         if 'step_adjustments' not in source:
             raise ValueError('StepAdjustments is required')
         target['StepAdjustments'] = []
@@ -277,15 +277,15 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
         for sub_source in source['step_adjustments']:
                 sub_target = {}
                 # metric_interval_lower_bound
-                self.process_step_scaling_policy_configuration_step_adjustments_metric_interval_lower_bound(sub_source, sub_target)
+                self._process_step_scaling_policy_configuration_step_adjustments_metric_interval_lower_bound(sub_source, sub_target)
                 # metric_interval_upper_bound
-                self.process_step_scaling_policy_configuration_step_adjustments_metric_interval_upper_bound(sub_source, sub_target)
+                self._process_step_scaling_policy_configuration_step_adjustments_metric_interval_upper_bound(sub_source, sub_target)
                 # scaling_adjustment
-                self.process_step_scaling_policy_configuration_step_adjustments_scaling_adjustment(sub_source, sub_target)
+                self._process_step_scaling_policy_configuration_step_adjustments_scaling_adjustment(sub_source, sub_target)
                 target['StepAdjustments'].append(sub_target)
    
-    def process_step_scaling_policy_configuration_step_adjustments_metric_interval_lower_bound(self, source, target):
-        self.process_property(
+    def _process_step_scaling_policy_configuration_step_adjustments_metric_interval_lower_bound(self, source, target):
+        self._process_property(
             source = source,
             target = target,
             source_property = 'metric_interval_lower_bound',
@@ -295,8 +295,8 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 7
         )
 
-    def process_step_scaling_policy_configuration_step_adjustments_metric_interval_upper_bound(self, source, target):
-        self.process_property(
+    def _process_step_scaling_policy_configuration_step_adjustments_metric_interval_upper_bound(self, source, target):
+        self._process_property(
             source = source,
             target = target,
             source_property = 'metric_interval_upper_bound',
@@ -306,8 +306,8 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 7
         )
 
-    def process_step_scaling_policy_configuration_step_adjustments_scaling_adjustment(self, source, target):
-        self.process_property(
+    def _process_step_scaling_policy_configuration_step_adjustments_scaling_adjustment(self, source, target):
+        self._process_property(
             source = source,
             target = target,
             source_property = 'scaling_adjustment',
@@ -316,17 +316,17 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 9
         )
 
-    def process_cloudwatch_alarms(self, source, target, count):
+    def _process_cloudwatch_alarms(self, source, target, count):
         if 'cloudwatch_alarms' not in source:
             raise ValueError('CloudwatchAlarms is required for Service.AutoScaling.StepScalingPolicyConfiguration.')
         self._log_information(key='CloudWatch Alarms', value='', indent=5)
         count_cloudwatch_alarms = 1
         for sub_source in source['cloudwatch_alarms']:
-            self.process_cloudwatch_alarm(sub_source, count, count_cloudwatch_alarms)
+            self._process_cloudwatch_alarm(sub_source, count, count_cloudwatch_alarms)
             count_cloudwatch_alarms = count_cloudwatch_alarms + 1
 
-    def process_cloudwatch_alarm_metric_name(self, source, target):
-        self.process_property(
+    def _process_cloudwatch_alarm_metric_name(self, source, target):
+        self._process_property(
             source = source,
             target = target,
             source_property = 'metric_name',
@@ -337,8 +337,8 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 6
         )
 
-    def process_cloudwatch_alarm_alarm_description(self, source, target):
-        self.process_property(
+    def _process_cloudwatch_alarm_alarm_description(self, source, target):
+        self._process_property(
             source = source,
             target = target,
             source_property = 'alarm_description',
@@ -347,8 +347,8 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 8
         )
 
-    def process_cloudwatch_alarm_namespace(self, source, target):
-        self.process_property(
+    def _process_cloudwatch_alarm_namespace(self, source, target):
+        self._process_property(
             source = source,
             target = target,
             source_property = 'namespace',
@@ -357,8 +357,8 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 8
         )
 
-    def process_cloudwatch_alarm_statistic(self, source, target):
-        self.process_property(
+    def _process_cloudwatch_alarm_statistic(self, source, target):
+        self._process_property(
             source = source,
             target = target,
             source_property = 'statistic',
@@ -368,8 +368,8 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 8
         )
     
-    def process_cloudwatch_alarm_period(self, source, target):
-       self.process_property(
+    def _process_cloudwatch_alarm_period(self, source, target):
+       self._process_property(
             source = source,
             target = target,
             source_property = 'period',
@@ -379,8 +379,8 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 8
         )
 
-    def process_cloudwatch_alarm_evaluation_periods(self, source, target):
-       self.process_property(
+    def _process_cloudwatch_alarm_evaluation_periods(self, source, target):
+       self._process_property(
             source = source,
             target = target,
             source_property = 'evaluation_periods',
@@ -390,8 +390,8 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 8
         )
  
-    def process_cloudwatch_alarm_threshold(self, source, target):
-       self.process_property(
+    def _process_cloudwatch_alarm_threshold(self, source, target):
+       self._process_property(
             source = source,
             target = target,
             source_property = 'threshold',
@@ -401,7 +401,7 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 8
         )
 
-    def process_cloudwatch_alarm_comparison_operator(self, origin, target):
+    def _process_cloudwatch_alarm_comparison_operator(self, origin, target):
         if 'comparison_operator' in origin:
             val = re.match('GreaterThanOrEqualToThreshold|GreaterThanThreshold|LessThanOrEqualToThreshold|LessThanThreshold', origin['comparison_operator'])
             if not val:
@@ -411,26 +411,26 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
            raise ValueError('ComparisonOperator is required in CloudwatchAlarm')
         self._log_information(key = 'ComparisonOperator', value=target['ComparisonOperator'], indent=8)
 
-    def process_cloudwatch_alarm(self, origin, count_policy, count_cloudwatch_alarms):
+    def _process_cloudwatch_alarm(self, origin, count_policy, count_cloudwatch_alarms):
         cfn = {}
         cfn['Type'] = 'AWS::CloudWatch::Alarm'
         target = {}
         # metric_name
-        self.process_cloudwatch_alarm_metric_name(origin, target)
+        self._process_cloudwatch_alarm_metric_name(origin, target)
         # alarm_description
-        self.process_cloudwatch_alarm_alarm_description(origin, target)
+        self._process_cloudwatch_alarm_alarm_description(origin, target)
         # namespace
-        self.process_cloudwatch_alarm_namespace(origin, target)
+        self._process_cloudwatch_alarm_namespace(origin, target)
         # statistic
-        self.process_cloudwatch_alarm_statistic(origin, target)
+        self._process_cloudwatch_alarm_statistic(origin, target)
         # period
-        self.process_cloudwatch_alarm_period(origin, target)
+        self._process_cloudwatch_alarm_period(origin, target)
         # evaluation_periods
-        self.process_cloudwatch_alarm_evaluation_periods(origin, target)
+        self._process_cloudwatch_alarm_evaluation_periods(origin, target)
         # threshold
-        self.process_cloudwatch_alarm_threshold(origin, target)
+        self._process_cloudwatch_alarm_threshold(origin, target)
         # comparison_operator
-        self.process_cloudwatch_alarm_comparison_operator(origin, target)
+        self._process_cloudwatch_alarm_comparison_operator(origin, target)
 
         target['AlarmActions'] = []
         alarm_action = {}
@@ -459,15 +459,15 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
     def _on_execute(self):
         """operation containing the processing performed by this step"""
         try:
-            origin = self.configuration['service']
+            source = self.configuration['service']
             target = self.infos.green_infos.stack['Resources']['Service']['Properties']
 
-            self.process_scheduling_strategy(origin, target)
-            self.process_platform_version(origin, target)
-            self.process_placement_constraints(origin, target)
-            self.process_placement_stategies(origin, target)
+            self._process_scheduling_strategy(source, target)
+            self._process_platform_version(source, target)
+            self._process_placement_constraints(source, target)
+            self._process_placement_stategies(source, target)
             self._process_load_balancer()
-            self.process_auto_scaling(origin)
+            self._process_auto_scaling(source)
             self.infos.save()
             return PrepareDeploymentTaskDefinitionStep(self.infos, self.logger)
         except Exception as e:

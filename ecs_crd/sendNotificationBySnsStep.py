@@ -15,9 +15,9 @@ class SendNotificationBySnsStep(CanaryReleaseDeployStep):
         if 'sns_topic_notifications' in self.configuration['canary']:
             result = self.configuration['canary']['sns_topic_notifications']
             if self.infos.exit_code == 0 and 'on_success' in  result:
-                return self.bind_data(result['on_success'])
+                return self._bind_data(result['on_success'])
             if self.infos.exit_code != 0 and 'on_fail' in  result:
-                return self.bind_data(result['on_fail'])
+                return self._bind_data(result['on_fail'])
             return None
 
     def _on_execute(self):

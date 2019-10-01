@@ -51,7 +51,7 @@ class CanaryReleaseDeployStep(ABC):
         self.logger.info(f'Step Result : {result}')
         self.logger.info('')
 
-    def process_property(self, **kwargs):
+    def _process_property(self, **kwargs):
         origin = None
         source = None
         source_property = None
@@ -105,7 +105,7 @@ class CanaryReleaseDeployStep(ABC):
                 else:
                     raise ValueError(f'{target_property}: {source[source_property]} is not valid{suffix_message}')
             else:
-                target[target_property] = self.bind_data(source[source_property])
+                target[target_property] = self._bind_data(source[source_property])
             if pattern:
                 val = re.match(pattern, target[target_property])
                 if not val:
@@ -115,7 +115,7 @@ class CanaryReleaseDeployStep(ABC):
             if required:
                 raise ValueError(f'{target_property} is required{suffix_message}')
 
-    def bind_data(self, source):
+    def _bind_data(self, source):
         if not source:
             return None
         data = source
@@ -158,15 +158,15 @@ class CanaryReleaseDeployStep(ABC):
     def _on_execute(self):
         pass
 
-    def wait(self, wait, label, tick=5):
+    def _wait(self, wait, label, tick=5):
         t = 0
         while (t < wait):
             time.sleep(tick)
             t += tick
-            r = self.second_to_string(t)
+            r = self._second_to_string(t)
             self.logger.info(f'{label} ... [{r} elapsed]')
 
-    def second_to_string(self, seconds):
+    def _second_to_string(self, seconds):
         tm = int(seconds)
         day = tm // (24 * 3600)
         tm = tm % (24 * 3600)

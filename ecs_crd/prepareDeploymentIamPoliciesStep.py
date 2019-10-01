@@ -23,7 +23,7 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
             resources.append('*')
         else:
             for r in item['resources']:
-                resources.append(self.bind_data(r))
+                resources.append(self._bind_data(r))
         actions = item['actions']
         return PolicyInfos(name, effect, actions, resources)
 

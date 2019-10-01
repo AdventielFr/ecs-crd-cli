@@ -23,7 +23,7 @@ class RollbackChangeRoute53WeightsStep(CanaryReleaseDeployStep):
             if self.infos.blue_infos.stack_id !=None:
                 if self._is_ready_to_rollback_weights(client):
                     self._rollback_weights(client)
-                    self.wait(60, 'Change DNS Weights in progress')
+                    self._wait(60, 'Change DNS Weights in progress')
             return DestroyGreenStackStep(self.infos, self.logger)
         except Exception as e:
             self.logger.error('RollbackChangeRoute53WeightsStep', exc_info=True)

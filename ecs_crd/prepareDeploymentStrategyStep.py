@@ -15,7 +15,7 @@ class PrepareDeploymentStrategyStep(CanaryReleaseDeployStep):
         self.default_weight = 50
         self.default_wait = 60
 
-    def process_strategy(self):
+    def _process_strategy(self):
         """update strategies informations for the service"""
         source = self.configuration['canary']
         if 'strategy' in source:
@@ -39,12 +39,12 @@ class PrepareDeploymentStrategyStep(CanaryReleaseDeployStep):
 
         for a in self.infos.strategy_infos:
             self._log_information(key='- Weight', value=a.weight, indent=1)
-            self._log_information(key='  Wait', value='{}s'.format(a.wait), indent=1)
+            self._log_information(key='  Wait', value=f'{a.wait}s', indent=1)
 
     def _on_execute(self):
         """operation containing the processing performed by this step"""
         try:
-            self.process_strategy()
+            self._process_strategy()
             if self.infos.test:
                 return None
             return CreateInitStackStep(self.infos, self.logger)

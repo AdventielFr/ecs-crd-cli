@@ -102,7 +102,7 @@ class CanaryReleaseInfos:
         self.elected_release = None
         self.ecs_crd_version = None
         self.green_infos
-        self.test = True
+        self.test = False
    
         keys = self.__dict__.keys()
         for k, v in kwargs.items():

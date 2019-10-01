@@ -48,7 +48,6 @@ class Parameters:
                 self.configuration_dir += "/"
             if not os.path.exists(self.configuration_dir):
                 raise ValueError(f'{self.configuration_dir} not exist.')
-
             self.configuration_file = f"{self.configuration_dir}{self.environment}.deploy.yml"
 
         if not os.path.isfile(self.configuration_file):
@@ -68,14 +67,14 @@ class Parameters:
 def main():
     pass
 
-@main.command(help='deploy the ECS service')
+@main.command(help='Deploy the ECS service')
 @click.option('-e', '--environment', required=True, default='stage', help='Environment to deploy.', show_default=True)
 @click.option('-r', '--region', required=True, default='eu-west-3', help='Amazon Web Service region used to deploy ECS service.', show_default=True)
 @click.option('-f', '--configuration-file', required=False, help='deployment configuration file.')
 @click.option('-d', '--configuration-dir', required=False, help='directory to find the deployment configuration file.')
 @click.option('--verbose', is_flag=True, default=False, help='activate verbose log.')
-@click.option('--test', is_flag=True, default=False, help='activate verbose log.')
 @click.option('--log-file', required=False, help='output log file result.')
+@click.option('--test', is_flag=True, default=False, help='activate verbose log.')
 def deploy(
         environment,
         region,
@@ -109,7 +108,7 @@ def _common_action(environment, region, configuration_file, configuration_dir, v
     canary_infos.initialize()
     return logger, canary_infos
 
-@main.command(help='undeploy the ECS service')
+@main.command(help='Undeploy the ECS service')
 @click.option('-e', '--environment', required=True, default='stage', help='Environment to deploy.', show_default=True)
 @click.option('-r', '--region', required=True, default='eu-west-3', help='Amazon Web Service region used to deploy ECS service.', show_default=True)
 @click.option('-f', '--configuration-file', required=False, help='deployment configuration file.')

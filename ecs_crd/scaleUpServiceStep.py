@@ -44,7 +44,7 @@ class ScaleUpServiceStep(CanaryReleaseDeployStep):
                     cluster=self.infos.cluster,
                     service=service_arn,
                     desiredCount=self.infos.scale_infos.desired)
-            self.wait(self.infos.scale_infos.wait, 'Scaling up in progress')
+            self._wait(self.infos.scale_infos.wait, 'Scaling up in progress')
             self.logger.info('')
             self.logger.info(f'Desired instances : {self.infos.scale_infos.desired}')
             return CheckGreenHealthStep(self.infos, self.logger)

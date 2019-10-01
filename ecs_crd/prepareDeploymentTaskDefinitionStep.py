@@ -49,7 +49,7 @@ class PrepareDeploymentTaskDefinitionStep(CanaryReleaseDeployStep):
             self._log_information(key='Volumes', value=None, ljust=10, indent=1)
             for e in item['volumes']:
                 volume = {}
-                volume['Name'] = self.bind_data(item['name'])
+                volume['Name'] = self._bind_data(item['name'])
                 self._log_information(key='- Name', value=volume['Name'], ljust=10, indent=2)
                 if 'docker_volume_configuration' in e:
                     volume['DockerVolumeConfiguration'] = {}
@@ -62,7 +62,7 @@ class PrepareDeploymentTaskDefinitionStep(CanaryReleaseDeployStep):
     def _process_host(self, item, cfn):
         self._log_information(key='Host', value=None, ljust=10, indent=4)
         if 'source_path' in item:
-            cfn['SourcePath'] = self.bind_data(item['source_path'])
+            cfn['SourcePath'] = self._bind_data(item['source_path'])
             self._log_information(key='SourcePath', value=cfn['SourcePath'], ljust=10, indent=5)
 
     def _process_docker_volume_configuration(self, item, cfn):
@@ -99,7 +99,7 @@ class PrepareDeploymentTaskDefinitionStep(CanaryReleaseDeployStep):
                     key = a
                 for a in elmt.values():
                     value = str(a)
-                elmt[key] = self.bind_data(value)
+                elmt[key] = self._bind_data(value)
                 cfn['Labels'].append(elmt)
                 self._log_information(key='- '+key, value=value, ljust=10, indent=6)
         if 'scope' in item:

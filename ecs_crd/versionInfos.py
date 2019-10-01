@@ -3,5 +3,5 @@
 
 class VersionInfos(object):
     def __init__(self):
-        self.version = '0.13.0'
+        self.version = '0.14.0c'
         self.description = 'ECS Canary Release Command LIne deploy'

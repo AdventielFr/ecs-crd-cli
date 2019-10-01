@@ -79,7 +79,7 @@ class ChangeRoute53WeightsStep(CanaryReleaseDeployStep):
         )
         if (green_weight == 100):
             self.infos.strategy_infos.clear()
-        self.wait(strategy.wait, "Changing DNS's Weights")
+        self._wait(strategy.wait, "Changing DNS's Weights")
 
     def _consume_strategy(self):
         """consume the first strategy of the canary release's definition"""
@@ -89,6 +89,7 @@ class ChangeRoute53WeightsStep(CanaryReleaseDeployStep):
                            self.infos.strategy_infos[1:])
             self.infos.strategy_infos = tmp
         return result
+
 
 class CheckGreenHealthStep(CanaryReleaseDeployStep):
     """ Check health status of Green's """
@@ -132,7 +133,7 @@ class CheckGreenHealthStep(CanaryReleaseDeployStep):
                 is_healthy_and_initial = self._is_all_full_states(health_checks, ['HEALTHY', 'INITIAL'])
                 if is_healthy_and_initial:
                     if self._nb_initial_test < self._nb_max_initial_test:
-                        self.wait(15, f'Waiting for service to start (attempts {self._nb_initial_test}/{self._nb_max_initial_test})')
+                        self._wait(15, f'Waiting for service to start (attempts {self._nb_initial_test}/{self._nb_max_initial_test})')
                         self._nb_initial_test += 1
                         continue
                 raise ValueError(f'Invalid state for Green TargetGroup')

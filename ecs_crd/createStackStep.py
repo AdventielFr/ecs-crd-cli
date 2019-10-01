@@ -53,7 +53,7 @@ class CreateStackStep(CanaryReleaseDeployStep):
         wait = 0
         while True:
             wait += self.timer
-            w = self.second_to_string(wait)
+            w = self._second_to_string(wait)
             self.logger.info('')
             time.sleep(self.timer)
             self.logger.info(f'Creating stack in progress ... [{w} elapsed]')
