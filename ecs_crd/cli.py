@@ -67,6 +67,27 @@ class Parameters:
 def main():
     pass
 
+@main.command(help='Valide the Deploy configuration file')
+@click.option('-e', '--environment', required=True, default='stage', help='Environment to deploy.', show_default=True)
+@click.option('-r', '--region', required=True, default='eu-west-3', help='Amazon Web Service region used to deploy ECS service.', show_default=True)
+@click.option('-f', '--configuration-file', required=False, help='deployment configuration file.')
+@click.option('-d', '--configuration-dir', required=False, help='directory to find the deployment configuration file.')
+@click.option('--verbose', is_flag=True, default=False, help='activate verbose log.')
+@click.option('--log-file', required=False, help='output log file result.')
+def validate(
+        environment,
+        region,
+        configuration_file,
+        configuration_dir,
+        verbose,
+        log_file):
+    logger, canary_infos = _common_action(environment, region, configuration_file, configuration_dir, verbose, log_file)
+    canary_infos.action = 'check'
+    canary_step = PrepareDeploymentGlobalParametersStep(canary_infos, logger)
+    while (canary_step):
+        canary_step = canary_step.execute()
+    sys.exit(canary_infos.exit_code)
+
 @main.command(help='Deploy the ECS service')
 @click.option('-e', '--environment', required=True, default='stage', help='Environment to deploy.', show_default=True)
 @click.option('-r', '--region', required=True, default='eu-west-3', help='Amazon Web Service region used to deploy ECS service.', show_default=True)
@@ -97,10 +118,10 @@ def _common_action(environment, region, configuration_file, configuration_dir, v
     parameters.configuration_dir = configuration_dir
     parameters.validate()
     canary_infos = CanaryReleaseInfos(
-        parameters.environment,
-        parameters.region,
-        parameters.configuration_file,
-        version_infos.version
+        environment = parameters.environment,
+        region = parameters.region,
+        configuration_file = parameters.configuration_file,
+        version = version_infos.version
     )
     return logger, canary_infos
 

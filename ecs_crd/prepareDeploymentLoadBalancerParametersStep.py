@@ -9,9 +9,9 @@ from ecs_crd.canaryReleaseInfos import ListenerRuleInfos
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.prepareDeploymentScaleParametersStep import PrepareDeploymentScaleParametersStep
 from ecs_crd.updateCanaryReleaseInfoStep import UpdateCanaryReleaseInfoStep
+from ecs_crd.sendNotificationBySnsStep import SendNotificationBySnsStep
 
 class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
-
 
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
@@ -93,17 +93,19 @@ class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
                 # no recreate init stack for deploy
                 self.infos.init_infos.stack = None
             self.infos.save()
-            if self.infos.action=='deploy':
-                return PrepareDeploymentScaleParametersStep(self.infos, self.logger)
             if self.infos.action=='undeploy':
                 return UpdateCanaryReleaseInfoStep(self.infos, self.logger)
+            else:
+                return PrepareDeploymentScaleParametersStep(self.infos, self.logger)
 
         except Exception as e:
             self.infos.exit_code = 2
             self.infos.exit_exception = e
             self.logger.error(self.title, exc_info=True)
-        else:
-            return None
+            if self.infos.action == 'deploy':
+                return SendNotificationBySnsStep(self.infos, self.logger)
+            if self.infos.action == 'check':
+                return FinishDeploymentStep(self.infos,self.logger)
 
     def _find_cloud_formation_stack(self, stack_name):
         client = boto3.client('cloudformation', region_name=self.infos.region)
@@ -169,7 +171,7 @@ class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
                             container_name = 'default'
                             if 'container' in item['target_group'] and 'name' in item['target_group']['container']:
                                 container_name = item['target_group']['container']['name']
-                            raise ValueError('Rule is mandatory for listener port:{}, target_group.port:{}, container_name:{}'.format(item['port'], item['target_group']['container']['port'], container_name))
+                            raise ValueError('The listener port {} is already used for Alb:{}. You can either use a different port for the listener or set rules on the listener. ( ContainerName:{}, ContainerPort:{} )'.format(item['port'], alb.arn, container_name,  item['target_group']['container']['port'], ))
                         rule_infos = ListenerRuleInfos(listener['ListenerArn'], item)
                         self.infos.listener_rules_infos.append(rule_infos)
                 break

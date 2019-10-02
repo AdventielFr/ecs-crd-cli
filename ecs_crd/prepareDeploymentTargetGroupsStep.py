@@ -3,7 +3,7 @@
 
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.prepareDeploymentListenersStep import PrepareDeploymentListenersStep
-
+from ecs_crd.sendNotificationBySnsStep import SendNotificationBySnsStep
 
 class PrepareDeploymentTargetGroupsStep(CanaryReleaseDeployStep):
 
@@ -224,8 +224,10 @@ class PrepareDeploymentTargetGroupsStep(CanaryReleaseDeployStep):
             self.infos.exit_code = 7
             self.infos.exit_exception = e
             self.logger.error(self.title, exc_info=True)
-        else:
-            return None
+            if self.infos.action == 'deploy':
+                return SendNotificationBySnsStep(self.infos, self.logger)
+            if self.infos.action == 'check':
+                return FinishDeploymentStep(self.infos,self.logger)
 
     def _add_to_output_cloud_formation(self, target_group_name):
         output = self.infos.green_infos.stack['Outputs']

@@ -4,6 +4,7 @@
 import re
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.prepareDeploymentTaskDefinitionStep import PrepareDeploymentTaskDefinitionStep
+from ecs_crd.sendNotificationBySnsStep import SendNotificationBySnsStep
 
 class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
 
@@ -474,5 +475,7 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             self.infos.exit_code = 5
             self.infos.exit_exception = e
             self.logger.error(self.title, exc_info=True)
-        else:
-            return None
+            if self.infos.action == 'deploy':
+                return SendNotificationBySnsStep(self.infos, self.logger)
+            if self.infos.action == 'check':
+                return FinishDeploymentStep(self.infos,self.logger)

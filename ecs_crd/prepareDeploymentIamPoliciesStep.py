@@ -3,7 +3,7 @@
 from ecs_crd.canaryReleaseInfos import PolicyInfos
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.prepareDeploymentStrategyStep import PrepareDeploymentStrategyStep
-
+from ecs_crd.sendNotificationBySnsStep import SendNotificationBySnsStep
 
 class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
 
@@ -134,5 +134,7 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
             self.infos.exit_code = 9
             self.infos.exit_exception = e
             self.logger.error(self.title, exc_info=True)
-        else:
-            return None
+            if self.infos.action == 'deploy':
+                return SendNotificationBySnsStep(self.infos, self.logger)
+            if self.infos.action == 'check':
+                return FinishDeploymentStep(self.infos,self.logger)

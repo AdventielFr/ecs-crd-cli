@@ -10,7 +10,7 @@ from ecs_crd.destroyGreenStackStep import DestroyGreenStackStep
 from ecs_crd.applyStrategyStep import CheckGreenHealthStep
 from ecs_crd.destroyGreenStackStep import DestroyGreenStackStep
 from ecs_crd.defaultJSONEncoder import DefaultJSONEncoder
-
+from ecs_crd.sendNotificationBySnsStep import SendNotificationBySnsStep
 
 class ScaleUpServiceStep(CanaryReleaseDeployStep):
 

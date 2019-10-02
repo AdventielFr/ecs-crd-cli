@@ -7,6 +7,7 @@ import json
 from ecs_crd.canaryReleaseInfos import StrategyInfos
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.prepareDeploymentLoadBalancerParametersStep import PrepareDeploymentLoadBalancerParametersStep
+from ecs_crd.sendNotificationBySnsStep import SendNotificationBySnsStep
 
 class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
 
@@ -18,6 +19,12 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
         """update the AWS account ID informations for the service"""
         self.infos.account_id = boto3.client('sts').get_caller_identity().get('Account')
         self._log_information(key='Account ID', value=self.infos.account_id, ljust=18)
+
+    def _process_env_data(self):
+        self.infos.green_infos.stack['Parameters']['Environment']['Default'] = self.infos.environment
+        self.infos.green_infos.stack['Parameters']['Region']['Default'] = self.infos.region
+        self.infos.init_infos.stack['Parameters']['Environment']['Default'] = self.infos.environment
+        self.infos.init_infos.stack['Parameters']['Region']['Default'] = self.infos.region
 
     def _process_canary_group(self):
         """update the canary group name informations for the service"""
@@ -98,6 +105,7 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
         try:
             self._log_information(key=f'{self.infos.action} ID', value=self.infos.id, ljust=18)
             self._process_account_id()
+            self._process_env_data()
             self._process_canary_group()
             self._process_external_ip()
             self._process_project()

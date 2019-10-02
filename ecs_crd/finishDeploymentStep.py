@@ -9,7 +9,7 @@ class FinishDeploymentStep(CanaryReleaseDeployStep):
 
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        super().__init__(infos, 'Finish deployment', logger, with_end_log=False)
+        super().__init__(infos, f'Finish {infos.action}', logger, with_end_log=False)
 
     def _on_execute(self):
         """operation containing the processing performed by this step"""

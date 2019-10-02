@@ -69,7 +69,8 @@ class SecretInfos:
         self.secrets_arn = []
 
 class CanaryReleaseInfos:
-    def __init__(self, environment, region, configuration_file, ecs_crd_version):
+    def __init__(self, **kwargs):
+        # environment, region, configuration_file, ecs_crd_version):
         self.id = uuid.uuid4().hex
         self.sns_topic_notification = None
         self.account_id = None
@@ -80,8 +81,8 @@ class CanaryReleaseInfos:
         self.canary_group = None
         self.cluster_name = None
         self.cluster = None
-        self.region = region
-        self.environment = environment
+        self.region = None
+        self.environment = None
         self.project = None
         self.service_name = None
         self.service_version = None
@@ -90,7 +91,7 @@ class CanaryReleaseInfos:
         self.hosted_zone_id = None
         self.vpc_id = None
         self.scale_infos = None
-        self.configuration_file = configuration_file
+        self.configuration_file = None
         self.strategy_infos = []
         self.init_infos = StackInfos()
         self.init_infos.stack = self._load_init_cloud_formation_template()
@@ -100,8 +101,12 @@ class CanaryReleaseInfos:
         self.listener_rules_infos = []
         self.secrets_infos = None
         self.elected_release = None
-        self.ecs_crd_version = ecs_crd_version
-   
+        self.ecs_crd_version = None
+
+        keys = self.__dict__.keys()
+        for k, v in kwargs.items():
+            if k in keys:
+                self.__dict__[k] = v
     def _load_green_cloud_formation_template(self):
         result = None
         filename = os.path.dirname(os.path.realpath(__file__))+'/cfn_green_release_deploy.json'

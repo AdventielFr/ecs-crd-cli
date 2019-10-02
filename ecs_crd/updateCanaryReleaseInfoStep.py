@@ -7,7 +7,7 @@ import datetime
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.rollbackChangeRoute53WeightsStep import RollbackChangeRoute53WeightsStep
 from ecs_crd.destroyBlueStackStep import DestroyBlueStackStep
-
+from ecs_crd.sendNotificationBySnsStep import SendNotificationBySnsStep
 
 class UpdateCanaryReleaseInfoStep(CanaryReleaseDeployStep):
 

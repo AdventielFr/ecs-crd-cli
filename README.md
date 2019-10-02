@@ -72,7 +72,11 @@ At any time on the command line, it is possible to recover the online help. To d
 
 At any time on the command line, it is possible to recover the version. To do this, simply type version.
 
-#### IV.1.3 Deploy a service
+#### IV.1.3 - Validate deployment file
+
+Before deploying, it is possible to validate the configuration file. For that use the command "validate" of the CLI.
+
+#### IV.1.4 Deploy a service
 
 To deploy a service, you must use the **deploy** sub command.The arguments for using this suborder are:
 
@@ -90,7 +94,7 @@ To deploy a service, you must use the **deploy** sub command.The arguments for u
 
 * If you use the **--configuration-dir** argument, the tool will look in the directory for a file of type **environment**.deploy.yml
 
-#### IV.1.4 Undeploy a service
+#### IV.1.5 Undeploy a service
 
 To undeploy a service, you must use the **undeploy** sub command. The arguments for using this suborder are the same as for the suborder **deploy**.
 
@@ -117,6 +121,10 @@ canary:
   strategy:
     - weight: integer
       wait: integer
+  sns_topic_notifications:
+    on_success: string
+    on_fail: string
+
 ```
 
 example,
@@ -234,6 +242,26 @@ each of item of stategy is composed of
 Example of deployment strategy
 
 ![alt text](_docs/strategy-step.png)
+
+#### V.1.4 - [canary].sns_topic_notifications
+
+To be informed that a deployment has been completed, it is possible to define two SNS topic ARNs that will transmit the information about the deployment.
+
+#### V.1.4.1 - [canary.sns_topic_notifications].on_success
+
+&nbsp;&nbsp;**description** : SNS topic ARN that publishes deployment messages successfully completed.
+
+&nbsp;&nbsp;**type** : sring
+
+&nbsp;&nbsp;**required** : no
+
+#### V.1.4.2 - [canary.sns_topic_notifications].on_fail
+
+&nbsp;&nbsp;**description** : SNS topic ARN that publishes failed deployment messages.
+
+&nbsp;&nbsp;**type** : sring
+
+&nbsp;&nbsp;**required** : no
 
 ### V.2 - service tag definition
 

@@ -12,6 +12,10 @@ canary:
   strategy:
     - weight: integer
       wait: integer
+  # Sns Notification definition
+  sns_topic_notifications:
+    on_success: string
+    on_fail: string
 # Service definition
 service:
   Project: string

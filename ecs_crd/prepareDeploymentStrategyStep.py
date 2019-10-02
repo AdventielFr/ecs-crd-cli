@@ -4,7 +4,8 @@
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.canaryReleaseInfos import StrategyInfos
 from ecs_crd.createInitStackStep import CreateInitStackStep
-
+from ecs_crd.sendNotificationBySnsStep import SendNotificationBySnsStep
+from ecs_crd.finishDeploymentStep import FinishDeploymentStep
 
 class PrepareDeploymentStrategyStep(CanaryReleaseDeployStep):
 
@@ -45,10 +46,15 @@ class PrepareDeploymentStrategyStep(CanaryReleaseDeployStep):
         """operation containing the processing performed by this step"""
         try:
             self._process_strategy()
-            return CreateInitStackStep(self.infos, self.logger)
+            if self.infos.action == 'deploy':
+                return CreateInitStackStep(self.infos, self.logger)
+            if self.infos.action == 'check':
+                return FinishDeploymentStep(self.infos,self.logger)
         except Exception as e:
             self.infos.exit_code = 10
             self.infos.exit_exception = e
             self.logger.error(self.title, exc_info=True)
-        else:
-            return None
+            if self.infos.action == 'deploy':
+                return SendNotificationBySnsStep(self.infos, self.logger)
+            if self.infos.action == 'check':
+                return FinishDeploymentStep(self.infos,self.logger)
