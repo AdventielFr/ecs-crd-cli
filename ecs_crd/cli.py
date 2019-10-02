@@ -99,7 +99,7 @@ def _common_action(environment, region, configuration_file, configuration_dir, v
     canary_infos = CanaryReleaseInfos(
         parameters.environment,
         parameters.region,
-        configuration_file,
+        parameters.configuration_file,
         version_infos.version
     )
     return logger, canary_infos

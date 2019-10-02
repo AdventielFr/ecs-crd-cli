@@ -69,7 +69,7 @@ class SecretInfos:
         self.secrets_arn = []
 
 class CanaryReleaseInfos:
-    def __init__(self, environment, region, configuration_file, ecs_crd_version, test):
+    def __init__(self, environment, region, configuration_file, ecs_crd_version):
         self.id = uuid.uuid4().hex
         self.sns_topic_notification = None
         self.account_id = None
