@@ -55,7 +55,7 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
 
     def _convert_2_condition_generic(self, item, condition, name):
         condition[name] = {}
-        self._log_information(key=name, value='', indent=4)
+        self._log_information(key=name, value='',indent=4)
         self._log_information(key='Values', value='', indent=5)
         condition[name]['Values'] = []
         for elmt in item['values']:

@@ -8,6 +8,7 @@ from ecs_crd.canaryReleaseInfos import StrategyInfos
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.prepareDeploymentLoadBalancerParametersStep import PrepareDeploymentLoadBalancerParametersStep
 from ecs_crd.sendNotificationBySnsStep import SendNotificationBySnsStep
+from ecs_crd.canaryReleaseInfos import FqdnInfos
 
 class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
 
@@ -64,6 +65,22 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
         self.infos.vpc_id = self._find_vpc_Id()
         self._log_information(key='Vpc ID', value=self.infos.vpc_id, ljust=18)
 
+    def _process_fqdn(self):
+        """update the fqdn"""
+
+        
+        source = self.configuration['service']['fqdn']
+        if isinstance(source, str):
+            self.infos.fqdn.append(self._to_fqdn_infos(source))
+        if isinstance(source, list):
+            for item in source:
+                self.infos.fqdn.append(self._to_fqdn_infos(item))
+        self._log_information(key='Fqdn', value=self.infos.fqdn[0].name, ljust=18)
+
+        if len(self.infos.fqdn) > 1:
+            for i in range(1, len(self.infos.fqdn)):
+                self.logger.info('                    '+self.infos.fqdn[i].name)
+ 
     def _process_cluster(self):
         """update the AWS ECS cluster informations for the service"""
         # clusterName 
@@ -93,6 +110,7 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
             self._process_service_name()
             self._process_version()
             self._process_vpc_id()
+            self._process_fqdn()
             self._process_cluster()
             self.infos.save()
             self._create_dynamodb_table()
@@ -163,3 +181,25 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
         except Exception:
             pass
         return data
+
+
+    def _to_fqdn_infos(self, source):
+        name = self._bind_data(source)
+        data = name.strip('.').split('.')
+        hosted_zone_name = data[len(data)-2]+'.'+data[len(data)-1]
+        hosted_zone = self._find_hosted_zone(hosted_zone_name.strip('.')+'.')
+        hosted_zone_id = hosted_zone['Id']
+        result = FqdnInfos(
+            name = name, 
+            hosted_zone_name = hosted_zone_name,
+            hosted_zone_id = hosted_zone_id
+        )
+        return result
+
+    def _find_hosted_zone(self, hostZoneName):
+        """find the AWS Route53 dns zone by name"""
+        client = boto3.client('route53', region_name=self.infos.region)
+        response = client.list_hosted_zones()
+        for item in response['HostedZones']:
+            if item['Name'] == hostZoneName:
+                return item

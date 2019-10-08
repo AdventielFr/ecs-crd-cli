@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation for use topic notification sns.
 - bugfix: Consideration of deployment error cases by the notification process sns.
 
-## [0.18.0] - 2017-10-08
+## [0.19.0] - 2017-10-08
 ### Added
 
-- multi fqdn management ( deleting the fqdn tag at the service definition tag /adding the fqdn tag at the container definition tag )
+- multi fqdn management ( allow array or one string for fqdn )

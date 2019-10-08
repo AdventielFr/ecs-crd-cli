@@ -7,7 +7,7 @@ import yaml
 import time
 import datetime
 import re
-
+import boto3
 class CanaryReleaseDeployStep(ABC):
 
     def __init__(self, infos, title, logger, with_end_log=True, with_start_log=True):
@@ -115,6 +115,22 @@ class CanaryReleaseDeployStep(ABC):
             if required:
                 raise ValueError(f'{target_property} is required{suffix_message}')
 
+    def _bind_data_fqdn(self, source):
+        try:
+            result = source
+            match = re.match('.*({{fqdn(\\[(\\d)\\])*}}).*',source)
+            while match != None:
+                if match.groups()[2]:
+                    index = int(match.groups()[2])
+                    pattern = str(match.groups()[0])
+                    result = result.replace(pattern, self.infos.fqdn[index].name)
+                else:
+                    result = result.replace(str(match.groups()[0]),self.infos.fqdn[0].name)
+                match = re.match('.*({{fqdn(\\[(\\d)\\])*}}).*',result)
+            return result
+        except:
+            raise ValueError('Invalid Fqdn template :{}'.format(source))
+
     def _bind_data(self, source):
         if not source:
             return None
@@ -131,10 +147,9 @@ class CanaryReleaseDeployStep(ABC):
             data = data.replace('{{name}}', self.infos.service_name)
         if self.infos.service_version:
             data = data.replace('{{version}}', self.infos.service_version)
-        #if self.infos.fqdn:
-        #    data = data.replace('{{fqdn}}', self.infos.fqdn)
         if self.infos.external_ip:
             data = data.replace('{{external_ip}}', self.infos.external_ip)
+        data = self._bind_data_fqdn(data)
         return data
 
     def _load_configuration(self):
