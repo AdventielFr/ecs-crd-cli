@@ -17,5 +17,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
  - multi fqdn management
-  deleting the fqdn tag at the service definition tag
-  adding the fqdn tag at the container definition tag
+ . deleting the fqdn tag at the service definition tag
+ . adding the fqdn tag at the container definition tag
