@@ -8,7 +8,6 @@ from ecs_crd.canaryReleaseInfos import LoadBalancerInfos
 from ecs_crd.canaryReleaseInfos import ListenerRuleInfos
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.prepareDeploymentScaleParametersStep import PrepareDeploymentScaleParametersStep
-from ecs_crd.updateCanaryReleaseInfoStep import UpdateCanaryReleaseInfoStep
 from ecs_crd.sendNotificationBySnsStep import SendNotificationBySnsStep
 
 class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
@@ -93,20 +92,14 @@ class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
                 # no recreate init stack for deploy
                 self.infos.init_infos.stack = None
             self.infos.save()
-            if self.infos.action=='undeploy':
-                return UpdateCanaryReleaseInfoStep(self.infos, self.logger)
-            else:
-                return PrepareDeploymentScaleParametersStep(self.infos, self.logger)
+            return PrepareDeploymentScaleParametersStep(self.infos, self.logger)
 
         except Exception as e:
             self.infos.exit_code = 2
             self.infos.exit_exception = e
             self.logger.error(self.title, exc_info=True)
-            if self.infos.action == 'deploy':
-                return SendNotificationBySnsStep(self.infos, self.logger)
-            if self.infos.action == 'check':
-                return FinishDeploymentStep(self.infos,self.logger)
-
+            return SendNotificationBySnsStep(self.infos, self.logger)
+         
     def _find_cloud_formation_stack(self, stack_name):
         client = boto3.client('cloudformation', region_name=self.infos.region)
         response = client.list_stacks(StackStatusFilter=['CREATE_COMPLETE'])
@@ -142,7 +135,14 @@ class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
 
             # aln is ready 
             if canaryRelease and canaryGroup:
-                albs.append(LoadBalancerInfos(arn, dnsName , canaryRelease, canonicalHostedZoneId))
+                albs.append(
+                    LoadBalancerInfos(
+                        arn=arn, 
+                        dns_name= dnsName , 
+                        canary_release = canaryRelease, 
+                        hosted_zone_id=canonicalHostedZoneId
+                    )
+                )
 
         # no alb found to deploy
         if not albs:
@@ -172,7 +172,7 @@ class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
                             if 'container' in item['target_group'] and 'name' in item['target_group']['container']:
                                 container_name = item['target_group']['container']['name']
                             raise ValueError('The listener port {} is already used for Alb:{}. You can either use a different port for the listener or set rules on the listener. ( ContainerName:{}, ContainerPort:{} )'.format(item['port'], alb.arn, container_name,  item['target_group']['container']['port'], ))
-                        rule_infos = ListenerRuleInfos(listener['ListenerArn'], item)
+                        rule_infos = ListenerRuleInfos(listener_arn=listener['ListenerArn'], configuration=item)
                         self.infos.listener_rules_infos.append(rule_infos)
                 break
 

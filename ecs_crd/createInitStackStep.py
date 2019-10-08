@@ -15,7 +15,8 @@ class CreateInitStackStep(CreateStackStep):
             'Create Init Cloudformation Stack', 
             logger,
             infos.init_infos)
-
+        #if self.infos.init_infos.stack: 
+  
     def _on_success(self):
         return CreateGreenStackStep(self.infos, self.logger)
         

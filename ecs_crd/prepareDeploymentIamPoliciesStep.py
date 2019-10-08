@@ -25,7 +25,11 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
             for r in item['resources']:
                 resources.append(self._bind_data(r))
         actions = item['actions']
-        return PolicyInfos(name, effect, actions, resources)
+        return PolicyInfos(
+            name = name, 
+            effect =effect, 
+            actions = actions, 
+            resources =resources)
 
     def _find_all_task_role_policies(self):
         """find all task role policies policies """
@@ -48,9 +52,13 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
         if self.infos.secret_infos:
             cfn_policies = []
             effect = 'Allow'
-            action = ['kms:Decrypt', 'secretsmanager:GetSecretValue']
-            resource = self.infos.secret_infos.secrets_arn + self.infos.secret_infos.kms_arn
-            result.append(PolicyInfos('AllowReadSecrets', effect, action, resource))
+            actions = ['kms:Decrypt', 'secretsmanager:GetSecretValue']
+            resources = self.infos.secret_infos.secrets_arn + self.infos.secret_infos.kms_arn
+            result.append(PolicyInfos(
+                name = 'AllowReadSecrets', 
+                effect = effect, 
+                actions = actions, 
+                resources = resources ))
         return result
 
     def _policy_info_2_cloud_formation_policy(self, policy_info):
@@ -62,17 +70,17 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
         cfn_policy['PolicyDocument']['Statement'] = []
         cfn_policy_item = {}
         cfn_policy_item['Effect'] = policy_info.effect
-        cfn_policy_item['Action'] = policy_info.action
-        cfn_policy_item['Resource'] = policy_info.resource
+        cfn_policy_item['Action'] = policy_info.actions
+        cfn_policy_item['Resource'] = policy_info.resources
         cfn_policy['PolicyDocument']['Statement'].append(cfn_policy_item)
         self.logger.info('')
         self._log_information(key='Sid', value=policy_info.name, indent=1)
         self._log_information(key='Effect', value=policy_info.effect, indent=2)
         self._log_information(key='Action', value='', indent=2)
-        for a in policy_info.action:
+        for a in policy_info.actions:
             self._log_information(key='- '+a, value=None, indent=3)
         self._log_information(key='Resource', value='', indent=2)
-        for a in policy_info.resource:
+        for a in policy_info.resources:
             self._log_information(key='- '+a, value=None, indent=3)
         return cfn_policy
 
@@ -134,7 +142,4 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
             self.infos.exit_code = 9
             self.infos.exit_exception = e
             self.logger.error(self.title, exc_info=True)
-            if self.infos.action == 'deploy':
-                return SendNotificationBySnsStep(self.infos, self.logger)
-            if self.infos.action == 'check':
-                return FinishDeploymentStep(self.infos,self.logger)
+            return SendNotificationBySnsStep(self.infos, self.logger)

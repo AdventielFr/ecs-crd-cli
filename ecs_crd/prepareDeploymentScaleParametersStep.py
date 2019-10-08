@@ -34,7 +34,4 @@ class PrepareDeploymentScaleParametersStep(CanaryReleaseDeployStep):
             self.infos.exit_code = 3
             self.infos.exit_exception = e
             self.logger.error(self.title, exc_info=True)
-            if self.infos.action == 'deploy':
-                return SendNotificationBySnsStep(self.infos, self.logger)
-            if self.infos.action == 'check':
-                return FinishDeploymentStep(self.infos,self.logger)
+            return SendNotificationBySnsStep(self.infos, self.logger)

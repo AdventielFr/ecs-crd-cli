@@ -6,7 +6,6 @@ from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.prepareDeploymentIamPoliciesStep import PrepareDeploymentIamPoliciesStep
 from ecs_crd.sendNotificationBySnsStep import SendNotificationBySnsStep
 
-
 class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
 
     def __init__(self, infos, logger):
@@ -46,11 +45,8 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
             self.infos.exit_code = 8
             self.infos.exit_exception = e
             self.logger.error(self.title, exc_info=True)
-            if self.infos.action == 'deploy':
-                return SendNotificationBySnsStep(self.infos, self.logger)
-            if self.infos.action == 'check':
-                return FinishDeploymentStep(self.infos,self.logger)
-
+            return SendNotificationBySnsStep(self.infos, self.logger)
+       
     def _find_listener_rule_infos(self, listener_infos):
         """find the listener rule informations"""
         for item in self.infos.listener_rules_infos:

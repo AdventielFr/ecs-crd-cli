@@ -26,7 +26,6 @@ class ChangeRoute53WeightsStep(CanaryReleaseDeployStep):
 
     def _change_weights(self, strategy):
         """update balancing ratio beetween blue's and green's DNS"""
-        client = boto3.client('route53')
         # by default 100 % for green / 0% for blue
         green_weight, blue_weight = (100, 0)
         # if exist canary strategy , set weights
@@ -39,15 +38,26 @@ class ChangeRoute53WeightsStep(CanaryReleaseDeployStep):
         self._log_information(key='DNS weight green', value=f"{green_weight}%")
         self.logger.info('')
 
+        client = boto3.client('route53')
+        for item in self.infos.fqdn:
+            self._change_weights_by_fqdn(item, client, blue_weight, green_weight)
+
+        if (green_weight == 100):
+            self.infos.strategy_infos.clear()
+        self.logger.info('')
+        self._wait(strategy.wait, "Changing DNS's Weights")
+
+    def _change_weights_by_fqdn(self, fqdn, client, blue_weight, green_weight):
+        self._log_information(key='Fqdn', value=fqdn.name)
         client.change_resource_record_sets(
-            HostedZoneId=self.infos.hosted_zone_id,
+            HostedZoneId = fqdn.hosted_zone_id,
             ChangeBatch={
                 'Comment': 'Alter Route53 records sets for canary blue-green deployment',
                 'Changes': [
                     {
                         'Action': 'UPSERT',
                         'ResourceRecordSet': {
-                            'Name': f"{self.infos.fqdn}.",
+                            'Name': f"{fqdn.name}.",
                             'Type': 'CNAME',
                             'SetIdentifier': self.infos.blue_infos.canary_release,
                             'Weight': blue_weight,
@@ -62,7 +72,7 @@ class ChangeRoute53WeightsStep(CanaryReleaseDeployStep):
                     {
                         'Action': 'UPSERT',
                         'ResourceRecordSet': {
-                            'Name': f"{self.infos.fqdn}.",
+                            'Name': f"{fqdn.name}.",
                             'Type': 'CNAME',
                             'SetIdentifier': self.infos.green_infos.canary_release,
                             'Weight': green_weight,
@@ -77,9 +87,7 @@ class ChangeRoute53WeightsStep(CanaryReleaseDeployStep):
                 ]
             }
         )
-        if (green_weight == 100):
-            self.infos.strategy_infos.clear()
-        self._wait(strategy.wait, "Changing DNS's Weights")
+       
 
     def _consume_strategy(self):
         """consume the first strategy of the canary release's definition"""

@@ -3,9 +3,11 @@ import boto3
 
 from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.canaryReleaseInfos import ScaleInfos
+from ecs_crd.canaryReleaseInfos import FqdnInfos
 from ecs_crd.canaryReleaseInfos import SecretInfos
 from ecs_crd.prepareDeploymentServiceDefinitionStep import PrepareDeploymentServiceDefinitionStep
-
+from ecs_crd.updateCanaryReleaseInfoStep import UpdateCanaryReleaseInfoStep
+from ecs_crd.sendNotificationBySnsStep import SendNotificationBySnsStep
 
 class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
 
@@ -131,6 +133,31 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
         for e in target['Environment']:
             self._log_information(
                 key='- '+e['Name'], value=e['Value'], indent=5)
+    
+    def _process_container_fqdn(self, source):
+        if 'fqdn' in source:
+            self._log_information(key='Fqdn', value='', indent=3)
+            if isinstance(source['fqdn'],str):
+                self.infos.fqdn.append(self._to_fqdn_infos(source['fqdn']))
+            elif isinstance(source['fqdn'], list):
+                for item in source['fqdn']:
+                    self.infos.fqdn.append(self._to_fqdn_infos(item))
+
+    def _to_fqdn_infos(self, source):
+        name = self._bind_data(source)
+        data = name.strip('.').split('.')
+        hosted_zone_name = data[len(data)-2]+'.'+data[len(data)-1]
+        hosted_zone = self._find_hosted_zone(hosted_zone_name.strip('.')+'.')
+        hosted_zone_id = hosted_zone['Id']
+        result = FqdnInfos(
+            name = name, 
+            hosted_zone_name = hosted_zone_name,
+            hosted_zone_id = hosted_zone_id
+        )
+        self._log_information(key='- Name', value=result.name, indent=4)
+        self._log_information(key='HostedZoneName', value=result.hosted_zone_name, indent=6)
+        self._log_information(key='HostedZoneId', value=result.hosted_zone_id, indent=6)
+        return result
 
     def _process_container_secrets(self, source, target):
         """update the secrets informations for the current container"""
@@ -313,7 +340,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
         self._log_information(key='- awslogs-stream-prefix',
                               value=container['LogConfiguration']['Options']['awslogs-stream-prefix'], indent=3)
 
-    def _process_depends_on(self, item, container):
+    def _process_container_depends_on(self, item, container):
         """update the depends on for the current container"""
         if 'depends_on' in item:
             container['DependsOn'] = []
@@ -338,6 +365,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                 self._process_container_name(source, target)
                 self._process_container_image(source, target)
                 self._process_container_cpu(source, target)
+                self._process_container_fqdn(source)
                 self._process_container_memory(source, target)
                 self._process_container_memory_reservation(source, target)
                 self._process_container_port_mappings(source, target)
@@ -357,17 +385,20 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                 self._process_container_log_configuration(source, target)
                 self._process_container_start_timeout(source, target)
                 self._process_container_stop_timeout(source, target)
-                self._process_depends_on(source, target)
+                self._process_container_depends_on(source, target)
+                
                 cfn.append(target)
             self.infos.save()
-            return PrepareDeploymentServiceDefinitionStep(self.infos, self.logger)
+            if self.infos.action=='undeploy':
+                return UpdateCanaryReleaseInfoStep(self.infos, self.logger)
+            else:
+                return PrepareDeploymentServiceDefinitionStep(self.infos, self.logger)
 
         except Exception as e:
             self.infos.exit_code = 4
             self.infos.exit_exception = e
             self.logger.error(self.title, exc_info=True)
-        else:
-            return None
+            return SendNotificationBySnsStep(self.infos, self.logger)
 
     def _add_default_environment_variable(self, target, key, value):
         """add a new default environment variables if not exists"""
@@ -417,3 +448,12 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                 KeyId=k, GrantTokens=['DescribeKey'])
             result.kms_arn.append(response['KeyMetadata']['Arn'])
         return result
+
+
+    def _find_hosted_zone(self, hostZoneName):
+        """find the AWS Route53 dns zone by name"""
+        client = boto3.client('route53', region_name=self.infos.region)
+        response = client.list_hosted_zones()
+        for item in response['HostedZones']:
+            if item['Name'] == hostZoneName:
+                return item

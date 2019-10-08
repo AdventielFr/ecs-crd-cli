@@ -272,7 +272,6 @@ service:
   project: string
   name: string
   cluster: string
-  fqdn: string
   version: string
   scheduling_strategy: string
   platform_version: string
@@ -318,15 +317,7 @@ service:
 
 &nbsp;&nbsp;**required** : yes
 
-#### V.2.4 - [service].fqdn
-
-&nbsp;&nbsp;**description** : Fully qualified domain name of the service to register in AWS Route 53 domain. Once the value is filled you can use the **{{fqdn}}** template for the other properties.
-
-&nbsp;&nbsp;**type** : string
-
-&nbsp;&nbsp;**required** : yes
-
-#### V.2.5 - [service].version
+#### V.2.4 - [service].version
 
 &nbsp;&nbsp;**description** : Version of the service. Once the value is filled you can use the **{{fqdn}}** template for the other properties.
 
@@ -334,7 +325,7 @@ service:
 
 &nbsp;&nbsp;**required** : yes
 
-#### V.2.6 - [service].scheduling_strategy
+#### V.2.5 - [service].scheduling_strategy
 
 &nbsp;&nbsp;**description** : The scheduling strategy to use for the service. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html#cfn-ecs-service-schedulingstrategy)
 
@@ -342,7 +333,7 @@ service:
 
 &nbsp;&nbsp;**required** : no
 
-#### V.2.7 - [service].platform_version
+#### V.2.6 - [service].platform_version
 
 &nbsp;&nbsp;**description** : The platform version that your tasks in the service are running on. A platform version is specified only for tasks using the Fargate launch type. If one isn't specified, the LATEST platform version is used by default. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html#cfn-ecs-service-platformversion)
 
@@ -350,7 +341,7 @@ service:
 
 &nbsp;&nbsp;**required** : no
 
-#### V.2.8 - [service].placement_constraints
+#### V.2.7 - [service].placement_constraints
 
 &nbsp;&nbsp;**description** : An array of placement constraint objects to use for tasks in your service. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html#cfn-ecs-service-placementconstraints)
 
@@ -358,13 +349,13 @@ service:
 
 &nbsp;&nbsp;**required** : no
 
-#### V.2.9 - [service].placement_strategies
+#### V.2.8 - [service].placement_strategies
 
 &nbsp;&nbsp;**description** : The placement strategy objects to use for tasks in your service. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-service.html#cfn-ecs-service-placementstrategies)
 
 &nbsp;&nbsp;**required** :  list of placement strategy tag definition ( see V.6 - Placement Strategy Tag Definition )
 
-#### V.2.10 - [service].containers
+#### V.2.9 - [service].containers
 
 &nbsp;&nbsp;**description** : The list of container defintitions. For more information see ( Container Tag definition V.3 )
 
@@ -372,7 +363,7 @@ service:
 
 &nbsp;&nbsp;**required** : yes
 
-#### V.2.11 - [service].cpu
+#### V.2.10 - [service].cpu
 
 &nbsp;&nbsp;**description** : The number of cpu units used by the task. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html#cfn-ecs-taskdefinition-cpu)
 
@@ -380,7 +371,7 @@ service:
 
 &nbsp;&nbsp;**required** : no
 
-#### V.2.12 - [service].ipc_mode
+#### V.2.11 - [service].ipc_mode
 
 &nbsp;&nbsp;**description** : The IPC resource namespace to use for the containers in the task. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html#cfn-ecs-taskdefinition-ipcmode)
 
@@ -390,7 +381,7 @@ service:
 
 &nbsp;&nbsp;**allowed values** : host | none | task
 
-#### V.2.13 - [service].memory
+#### V.2.12 - [service].memory
 
 &nbsp;&nbsp;**description** : The amount (in MiB) of memory used by the task. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html#cfn-ecs-taskdefinition-memory)
 
@@ -398,7 +389,7 @@ service:
 
 &nbsp;&nbsp;**required** : no
 
-#### V.2.14 - [service].network_mode
+#### V.2.13 - [service].network_mode
 
 &nbsp;&nbsp;**description** : The Docker networking mode to use for the containers in the task. For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html#cfn-ecs-taskdefinition-networkmode)
 
@@ -426,7 +417,7 @@ service:
 
 &nbsp;&nbsp;**required** : no
 
-#### V.2.15 - [service].iam_roles
+#### V.2.16 - [service].iam_roles
 
 &nbsp;&nbsp;**description** : Contains the list of iam policies to apply on the service when it starts and when it is running
 
@@ -434,7 +425,7 @@ service:
 
 &nbsp;&nbsp;**required** : no
 
-#### V.2.15 - [service].auto_scaling
+#### V.2.17 - [service].auto_scaling
 
 &nbsp;&nbsp;**description** : Contains the triggered cloudwatch alert service scaling strategy.
 
@@ -442,7 +433,7 @@ service:
 
 &nbsp;&nbsp;**required** : no
 
-#### V.2.15 - [service].volumes
+#### V.2.18 - [service].volumes
 
 &nbsp;&nbsp;**description** : The list of volume definitions for the task.For more information [see AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html#cfn-ecs-taskdefinition-volumes)
 
@@ -646,6 +637,14 @@ with,
 &nbsp;&nbsp;**required** : no
 
 &nbsp;&nbsp;**type** :  boolean
+
+#### V.3.17 - [container].fqdn
+
+&nbsp;&nbsp;**description** : Fully qualified domain name of the container to register in AWS Route 53 domain. Once the value is filled you can use the **{{fqdn}}** template for the other properties. **you need at least container definitions with jun fqdn**.
+
+&nbsp;&nbsp;**type** : list of string
+
+&nbsp;&nbsp;**required** : yes for the first container, optional for other containers
 
 #### V.4 - Container Port mapping tag definition
 

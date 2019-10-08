@@ -131,8 +131,8 @@ class CanaryReleaseDeployStep(ABC):
             data = data.replace('{{name}}', self.infos.service_name)
         if self.infos.service_version:
             data = data.replace('{{version}}', self.infos.service_version)
-        if self.infos.fqdn:
-            data = data.replace('{{fqdn}}', self.infos.fqdn)
+        #if self.infos.fqdn:
+        #    data = data.replace('{{fqdn}}', self.infos.fqdn)
         if self.infos.external_ip:
             data = data.replace('{{external_ip}}', self.infos.external_ip)
         return data

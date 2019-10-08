@@ -7,11 +7,6 @@
             "Description": "Project name.",
             "Default": ""
         },
-        "HostedZoneName": {
-            "Type": "String",
-            "Description": "The ID of the hosted zone that contains the resource record sets that you want to change.",
-            "Default": ""
-        },
         "ClusterName": {
             "Type": "String",
             "Description": "Name of cluster used for deployment.",
@@ -51,11 +46,6 @@
             "Type": "Number",
             "Description": "TTL for Route53 recordset.",
             "Default": 60
-        },
-        "Fqdn":{
-            "Type": "String",
-            "Description": "FQDN of the service",
-            "Default": ""
         }
     },
     "Resources": {
@@ -80,41 +70,6 @@
                 "RetentionInDays": {
                     "Ref": "RetentionInDays"
                 }
-            }
-        },
-        "CanaryReleaseRecordSetGroup": {
-            "Type": "AWS::Route53::RecordSetGroup",
-            "Properties": {
-                "HostedZoneName": {
-                    "Ref": "HostedZoneName"
-                },
-                "RecordSets": [{
-                    "Name": {
-                        "Ref": "Fqdn"
-                    },
-                    "Type": "CNAME",
-                    "TTL": {
-                        "Ref": "Route53RecordetSetTTL"
-                    },
-                    "SetIdentifier": "1",
-                    "Weight": "100",
-                    "ResourceRecords": [{
-                        "Ref": "LoadBalancerGreen"
-                    }]
-                }, {
-                    "Name": {
-                        "Ref": "Fqdn"
-                    },
-                    "Type": "CNAME",
-                    "TTL": {
-                        "Ref": "Route53RecordetSetTTL"
-                    },
-                    "SetIdentifier": "2",
-                    "Weight": "0",
-                    "ResourceRecords": [{
-                        "Ref": "LoadBalancerBlue"
-                    }]
-                }]
             }
         }
     }

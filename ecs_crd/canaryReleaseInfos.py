@@ -13,9 +13,13 @@ from ecs_crd.defaultJSONEncoder import DefaultJSONEncoder
 from ecs_crd.versionInfos import VersionInfos
 
 class ScaleInfos:
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.desired = 2
         self.wait = 60
+        keys = self.__dict__.keys()
+        for k, v in kwargs.items():
+            if k in keys:
+                self.__dict__[k] = v
 
 class StrategyInfos:
     def __init__(self, **kwargs):
@@ -27,50 +31,82 @@ class StrategyInfos:
                 self.__dict__[k] = v
 
 class PolicyInfos:
-    def __init__(self, name, effect, action, resource):
-        self.name = name
-        self.effect = effect
-        self.action = action
-        self.resource = resource
+    def __init__(self, **kwargs):
+        self.name = None
+        self.effect = None
+        self.actions = None
+        self.resources = None
+        keys = self.__dict__.keys()
+        for k, v in kwargs.items():
+            if k in keys:
+                self.__dict__[k] = v
 
 class StackInfos:
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.stack_id = None
         self.stack_name = None
         self.stack = None
-        self.file_name = None
-
+        keys = self.__dict__.keys()
+        for k, v in kwargs.items():
+            if k in keys:
+                self.__dict__[k] = v
 
 class ReleaseInfos(StackInfos):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.alb_arn = None
         self.alb_dns = None
         self.alb_hosted_zone_id = None
         self.canary_release = None
+        keys = self.__dict__.keys()
+        for k, v in kwargs.items():
+            if k in keys:
+                self.__dict__[k] = v
+
+class FqdnInfos(object):
+    def __init__(self, **kwargs):
+        self.name = None
+        self.hosted_zone_name = None
+        self.hosted_zone_id = None
+        keys = self.__dict__.keys()
+        for k, v in kwargs.items():
+            if k in keys:
+                self.__dict__[k] = v
 
 class LoadBalancerInfos:
-    def __init__(self, arn, dns_name, canary_release, hosted_zone_id):
-        self.arn = arn
-        self.dns_name = dns_name
-        self.canary_release = canary_release
+    def __init__(self, **kwargs):
+        self.arn = None
+        self.dns_name = None
+        self.canary_release = None
         self.is_elected = False
-        self.hosted_zone_id = hosted_zone_id
+        self.hosted_zone_id = None
+        keys = self.__dict__.keys()
+        for k, v in kwargs.items():
+            if k in keys:
+                self.__dict__[k] = v
+
 
 class ListenerRuleInfos:
-    def __init__(self, listener_arn, configuration):
-        self.listener_arn = listener_arn
-        self.configuration = configuration
+    def __init__(self,  **kwargs):
+        self.listener_arn = None
+        self.configuration = None
+        keys = self.__dict__.keys()
+        for k, v in kwargs.items():
+            if k in keys:
+                self.__dict__[k] = v
 
 class SecretInfos:
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.secrets = []
         self.kms_arn = []
         self.secrets_arn = []
+        keys = self.__dict__.keys()
+        for k, v in kwargs.items():
+            if k in keys:
+                self.__dict__[k] = v
 
-class CanaryReleaseInfos:
+class CanaryReleaseInfos(object):
     def __init__(self, **kwargs):
-        # environment, region, configuration_file, ecs_crd_version):
         self.id = uuid.uuid4().hex
         self.sns_topic_notification = None
         self.account_id = None
@@ -87,7 +123,7 @@ class CanaryReleaseInfos:
         self.service_name = None
         self.service_version = None
         self.listener_port = None
-        self.fqdn = None
+        self.fqdn = []
         self.hosted_zone_id = None
         self.vpc_id = None
         self.scale_infos = None
@@ -107,6 +143,7 @@ class CanaryReleaseInfos:
         for k, v in kwargs.items():
             if k in keys:
                 self.__dict__[k] = v
+
     def _load_green_cloud_formation_template(self):
         result = None
         filename = os.path.dirname(os.path.realpath(__file__))+'/cfn_green_release_deploy.json'

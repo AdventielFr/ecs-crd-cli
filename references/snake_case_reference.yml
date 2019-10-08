@@ -21,7 +21,6 @@ service:
   Project: string
   name: string
   cluster: string
-  fqdn: string
   cpu: integer
   memory: integer
   pid_mode: string
@@ -56,6 +55,8 @@ service:
   containers:
     - name: string
       image: nginx
+      fqdn: 
+        - string 
       cpu: integer
       memory: integer
       memory_reservation: integer

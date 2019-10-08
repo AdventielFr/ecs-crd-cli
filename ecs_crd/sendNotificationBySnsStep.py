@@ -21,38 +21,38 @@ class SendNotificationBySnsStep(CanaryReleaseDeployStep):
             return None
 
     def _on_execute(self):
-        sns_topic_notification = self._find_sns_topic_notifcation()
-        if sns_topic_notification:
-            message = f'ECS canary {self.infos.action} of the "{self.infos.service_name}" service was successful.'
-            if self.infos.exit_code != 0:
-                message = f'ECS canary {self.infos.action} of the "{self.infos.service_name}" service was failed.'
-            message +=f'\nAccount        : {self.infos.account_id}'
-            message +=f'\nRegion         : {self.infos.region}'
-            message +=f'\nEnvironment    : {self.infos.environment}'
-            message +=f'\nCluster        : {self.infos.cluster_name}'
-            message +=f'\nProject        : {self.infos.project}'
-            message +=f'\nService        : {self.infos.service_name}'
-            message +=f'\nVersion        : {self.infos.service_version}'
-            message +=f'\nFqdn           : {self.infos.fqdn}'
-            message +=f'\nExit Code      : {self.infos.exit_code}'
-            message +=f'\nMessage        : {self.infos.exit_exception}'
-            subject = '[SUCCESS]' if self.infos.exit_code == 0 else '[FAIL]'
-            subject += f' {self.infos.action} - {self.infos.service_name}' 
-            client = boto3.client('sns', region_name=self.infos.region)
-            self._log_information(key='Sending Notification ... ', value=None)
-            try:
-                client.publish(
-                    TopicArn = sns_topic_notification,
-                    Message = message,
-                    Subject = subject
-                )
-                self._log_information(key='Notification sended with success.', value=None)
-            except Exception as e:
-                if self.infos.exit_code == 0:
-                    self.infos.exit_code = 100
-                    self.infos.exit_exception = e
-                self.logger.error(self.title, exc_info=True)
-        else:
-           self._log_information(key='No notification to send', value=None)
-
+        if self.infos.action != 'validate':
+            sns_topic_notification = self._find_sns_topic_notifcation()
+            if sns_topic_notification:
+                message = f'ECS canary {self.infos.action} of the "{self.infos.service_name}" service was successful.'
+                if self.infos.exit_code != 0:
+                    message = f'ECS canary {self.infos.action} of the "{self.infos.service_name}" service was failed.'
+                message +=f'\nAccount        : {self.infos.account_id}'
+                message +=f'\nRegion         : {self.infos.region}'
+                message +=f'\nEnvironment    : {self.infos.environment}'
+                message +=f'\nCluster        : {self.infos.cluster_name}'
+                message +=f'\nProject        : {self.infos.project}'
+                message +=f'\nService        : {self.infos.service_name}'
+                message +=f'\nVersion        : {self.infos.service_version}'
+                message +=f'\nFqdn           : {self.infos.fqdn}'
+                message +=f'\nExit Code      : {self.infos.exit_code}'
+                message +=f'\nMessage        : {self.infos.exit_exception}'
+                subject = '[SUCCESS]' if self.infos.exit_code == 0 else '[FAIL]'
+                subject += f' {self.infos.action} - {self.infos.service_name}' 
+                client = boto3.client('sns', region_name=self.infos.region)
+                self._log_information(key='Sending Notification ... ', value=None)
+                try:
+                    client.publish(
+                        TopicArn = sns_topic_notification,
+                        Message = message,
+                        Subject = subject
+                    )
+                    self._log_information(key='Notification sended with success.', value=None)
+                except Exception as e:
+                    if self.infos.exit_code == 0:
+                        self.infos.exit_code = 100
+                        self.infos.exit_exception = e
+                    self.logger.error(self.title, exc_info=True)
+            else:
+                self._log_information(key='No notification to send', value=None)
         return FinishDeploymentStep(self.infos, self.logger)

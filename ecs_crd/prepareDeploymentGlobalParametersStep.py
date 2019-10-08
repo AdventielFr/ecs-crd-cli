@@ -59,25 +59,6 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
         self.infos.green_infos.stack['Parameters']['Version']['Default'] = self.infos.service_version
         self._log_information(key='Version', value=self.infos.service_version, ljust=18)
 
-    def _process_fqdn(self):
-        """update the fqdn informations for the service"""
-        fqdn = self._bind_data(self.configuration['service']['fqdn'])
-        self.infos.fqdn = fqdn
-        self.infos.init_infos.stack['Parameters']['Fqdn']['Default'] = fqdn
-        self._log_information(key='Fqdn', value=self.infos.fqdn, ljust=18)
-
-    def _process_hosted_zone_name(self):
-        """update the AWS route53 hosted zone informations for the service"""
-        data = self.infos.fqdn.split('.')
-        hostZoneName = ".".join(data[-2:]) + '.'
-        self.infos.init_infos.stack['Parameters']['HostedZoneName']['Default'] = hostZoneName
-        self._log_information(key='Dns zone', value=hostZoneName, ljust=18)
-        hostedZone = self._find_hosted_zone(hostZoneName)
-        if not hostedZone:
-            raise ValueError(f'HostedZone {hostZoneName} not found, create Route53 Zone before deploy')
-        self.infos.hosted_zone_id = hostedZone['Id'].split('/')[2]
-        self._log_information(key='Dns zone ID', value=self.infos.hosted_zone_id, ljust=18)
-
     def _process_vpc_id(self):
         """update the AWS vpc ID informations for the service"""
         self.infos.vpc_id = self._find_vpc_Id()
@@ -111,8 +92,6 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
             self._process_project()
             self._process_service_name()
             self._process_version()
-            self._process_fqdn()
-            self._process_hosted_zone_name()
             self._process_vpc_id()
             self._process_cluster()
             self.infos.save()
@@ -122,6 +101,7 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
             self.infos.exit_code = 1
             self.infos.exit_exception = e
             self.logger.error(self.title, exc_info=True)
+            return SendNotificationBySnsStep(self.infos, self.logger)
         else:
             return None
 
@@ -146,14 +126,6 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
             if arn.endswith(clusterName):
                 return arn
         raise ValueError(f'Cluster "{clusterName}" not found.')
-
-    def _find_hosted_zone(self, hostZoneName):
-        """find the AWS Route53 dns zone by name"""
-        client = boto3.client('route53', region_name=self.infos.region)
-        response = client.list_hosted_zones()
-        for item in response['HostedZones']:
-            if item['Name'] == hostZoneName:
-                return item
 
     def _create_dynamodb_table(self):
         """create the AWS DynamoDB table if not exist"""

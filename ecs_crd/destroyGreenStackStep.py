@@ -17,7 +17,7 @@ class DestroyGreenStackStep(DestroyStackStep):
         )
 
     def _on_success(self):
-        SendNotificationBySnsStep(self.infos, self.logger)
+        return SendNotificationBySnsStep(self.infos, self.logger)
         
     def _on_fail(self):
-        return None
+        return SendNotificationBySnsStep(self.infos, self.logger)
