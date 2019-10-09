@@ -57,7 +57,7 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             indent = 4
         )
 
-    def _process_placement_constraints_contraint_expression(self, origin, target):
+    def _process_placement_constraints_contraint_expression(self, source, target):
         self._process_property(
             source = source,
             target = target,
