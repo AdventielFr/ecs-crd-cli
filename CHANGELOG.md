@@ -19,3 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - multi fqdn management ( allow array or one string for fqdn )
+
+## [0.20.1] - 2017-10-09
+### Added
+
+- fix: error prepareDeploymentServiceDefinitionStep.py / prep_process_placement_constraints_contraint_expression / source
+
+
