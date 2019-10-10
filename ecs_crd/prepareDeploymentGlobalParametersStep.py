@@ -175,7 +175,7 @@ class PrepareDeploymentGlobalParametersStep(CanaryReleaseDeployStep):
         """find the external ip"""
         data = None
         try:
-            data = json.loads(urllib.request.urlopen("http://ip.jsontest.com/").read())
+            data = json.loads(urllib.request.urlopen("https://api.ipify.org?format=json").read())
             if 'ip' in data:
                 return data['ip']
         except Exception:

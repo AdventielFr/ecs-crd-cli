@@ -63,7 +63,7 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             target = target,
             source_property = 'expression',
             parent_property = 'Service.PlacementConstraints.Expression',
-            indent = 4
+            indent = 6
         )
     
     def _process_placement_stategies(self, source, properties):
@@ -98,7 +98,7 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             pattern = 'binpack|random|spread',
             multi = True,
             parent_property = 'Service.PlacementStrategies',
-            indent = 4
+            indent = 6
         )
 
     def _process_load_balancer(self):

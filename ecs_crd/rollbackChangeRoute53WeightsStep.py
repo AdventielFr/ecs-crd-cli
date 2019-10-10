@@ -21,9 +21,7 @@ class RollbackChangeRoute53WeightsStep(CanaryReleaseDeployStep):
         try:
             client = boto3.client('route53')
             if self.infos.blue_infos.stack_id !=None:
-                if self._is_ready_to_rollback_weights(client):
-                    self._rollback_weights(client)
-                    self._wait(60, 'Change DNS Weights in progress')
+                self._rollback_weights(client)
             return DestroyGreenStackStep(self.infos, self.logger)
         except Exception as e:
             self.logger.error('RollbackChangeRoute53WeightsStep', exc_info=True)
@@ -31,23 +29,13 @@ class RollbackChangeRoute53WeightsStep(CanaryReleaseDeployStep):
             self.infos.exit_code = 15
             return SendNotificationBySnsStep(self.infos, self.logger)
 
-    def _is_ready_to_rollback_weights(self, client):
-        response = client.list_resource_record_sets(HostedZoneId=self.infos.hosted_zone_id)
-        blue = list(filter(lambda x: x['Name'] == f"{self.infos.fqdn}." and x['SetIdentifier'] == self.infos.blue_infos.canary_release, response['ResourceRecordSets']))
+    def _is_ready_to_rollback_weights(self, fqdn_infos, client):
+        response = client.list_resource_record_sets(HostedZoneId=fqdn_infos.hosted_zone_id, StartRecordName=fqdn_infos.name, MaxItems = '2')
+        blue = list(filter(lambda x: x['Name'] == f"{fqdn_infos.name}." and x['SetIdentifier'] == self.infos.blue_infos.canary_release, response['ResourceRecordSets']))
         return int(blue[0]['Weight']) < 100
 
-    def _rollback_weights(self, client):
-        self.logger.info(f'FQDN : {self.infos.fqdn}')
-        self.logger.info('Blue')
-        self.logger.info(f' DNS     :{self.infos.blue_infos.alb_dns}')
-        self.logger.info(f' Weight  :100%')
-        self.logger.info(f' Release :{self.infos.blue_infos.canary_release}')
-        self.logger.info('Green')
-        self.logger.info(f' DNS     :{self.infos.green_infos.alb_dns}')
-        self.logger.info(f' Weight  :0%')
-        self.logger.info(f' Release :{self.infos.green_infos.canary_release}')     
-        self.logger.info('')
-
+    def _rollback_weights_by_fqdn(self, fqdn_infos, client):
+        self._log_information(key='Fqdn', value= fqdn_infos.name)
         response = client.change_resource_record_sets(
             HostedZoneId=self.infos.hosted_zone_id,
             ChangeBatch={
@@ -56,7 +44,7 @@ class RollbackChangeRoute53WeightsStep(CanaryReleaseDeployStep):
                     {
                         'Action': 'UPSERT',
                         'ResourceRecordSet': {
-                            'Name': self.infos.fqdn + '.',
+                            'Name': fqdn_infos.name + '.',
                             'Type': 'CNAME',
                             'SetIdentifier': self.infos.blue_infos.canary_release,
                             'Weight': 100,
@@ -71,7 +59,7 @@ class RollbackChangeRoute53WeightsStep(CanaryReleaseDeployStep):
                     {
                         'Action': 'UPSERT',
                         'ResourceRecordSet': {
-                            'Name': self.infos.fqdn + '.',
+                            'Name': fqdn_infos.name + '.',
                             'Type': 'CNAME',
                             'SetIdentifier': self.infos.green_infos.canary_release,
                             'Weight': 0,
@@ -86,3 +74,24 @@ class RollbackChangeRoute53WeightsStep(CanaryReleaseDeployStep):
                 ]
             }
         )
+        self._wait(60, 'Change DNS Weights in progress')
+
+    def _rollback_weights(self, client):
+        self.logger.info('Blue')
+        self.logger.info(f' DNS     :{self.infos.blue_infos.alb_dns}')
+        self.logger.info(f' Weight  :100%')
+        self.logger.info(f' Release :{self.infos.blue_infos.canary_release}')
+        self.logger.info('Green')
+        self.logger.info(f' DNS     :{self.infos.green_infos.alb_dns}')
+        self.logger.info(f' Weight  :0%')
+        self.logger.info(f' Release :{self.infos.green_infos.canary_release}')     
+        self.logger.info('')
+
+        for fqdn_infos in self.infos.fqdn:
+            self._log_information(key='Fqdn', value=fqdn_infos.name)
+            if self._is_ready_to_rollback_weights(fqdn_infos, client):
+                self._rollback_weights_by_fqdn(fqdn_infos, client)
+            else:
+                self.logger.info(f" No change in weight of DNS")
+
+ 

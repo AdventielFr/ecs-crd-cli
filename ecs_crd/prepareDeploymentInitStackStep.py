@@ -15,6 +15,11 @@ class PrepareDeploymentInitStackStep(CanaryReleaseDeployStep):
     def _on_execute(self):
         """operation containing the processing performed by this step"""
         try:
+            for item in self.infos.fqdn:
+                self.logger.info('')
+                self._log_information(key='- Fqdn',value=item.name, indent=1)
+                self._log_information(key='HostedZoneName',value=item.hosted_zone_name, indent=3)
+                self._log_information(key='HostedZoneId',value=item.hosted_zone_id, indent=3)
             if self.infos.init_infos.stack:
                 self._prepare_record_set_group()
             if self.infos.action == 'validate':
@@ -32,11 +37,7 @@ class PrepareDeploymentInitStackStep(CanaryReleaseDeployStep):
         count = 1
         target = self.infos.init_infos.stack['Resources']
         for item in self.infos.fqdn:
-            self.logger.info('')
             self._process_record_set_group_by_fqdn(item, count, target)
-            self._log_information(key='- Fqdn',value=item.name, indent=1)
-            self._log_information(key='HostedZoneName',value=item.hosted_zone_name, indent=3)
-            self._log_information(key='HostedZoneId',value=item.hosted_zone_id, indent=3)
             count += 1
         self.infos.save()
 

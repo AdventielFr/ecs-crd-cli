@@ -34,7 +34,10 @@ class SendNotificationBySnsStep(CanaryReleaseDeployStep):
                 message +=f'\nProject        : {self.infos.project}'
                 message +=f'\nService        : {self.infos.service_name}'
                 message +=f'\nVersion        : {self.infos.service_version}'
-                message +=f'\nFqdn           : {self.infos.fqdn}'
+                fqdn = ''
+                for item in self.infos.fqdn:
+                    fqdn += item.name + ','
+                message +=f'\nFqdn           : {fqdn}'
                 message +=f'\nExit Code      : {self.infos.exit_code}'
                 message +=f'\nMessage        : {self.infos.exit_exception}'
                 subject = '[SUCCESS]' if self.infos.exit_code == 0 else '[FAIL]'
