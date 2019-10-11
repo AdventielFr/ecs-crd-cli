@@ -36,13 +36,16 @@ class ScaleUpServiceStep(CanaryReleaseDeployStep):
                     deploymentConfiguration={
                         'maximumPercent': 100 * self.infos.scale_infos.desired,
                         'minimumHealthyPercent': 100
-                    }
+                    },
+                    forceNewDeployment= True
+
                 )
             else:
                 client.update_service(
                     cluster=self.infos.cluster,
                     service=service_arn,
-                    desiredCount=self.infos.scale_infos.desired)
+                    desiredCount=self.infos.scale_infos.desired,
+                    forceNewDeployment= True)
             self._wait(self.infos.scale_infos.wait, 'Scaling up in progress')
             self.logger.info('')
             self.logger.info(f'Desired instances : {self.infos.scale_infos.desired}')

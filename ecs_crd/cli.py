@@ -121,7 +121,7 @@ def _common_action(environment, region, configuration_file, configuration_dir, v
         environment = parameters.environment,
         region = parameters.region,
         configuration_file = parameters.configuration_file,
-        version = version_infos.version
+        ecs_crd_version = version_infos.version
     )
     return logger, canary_infos
 
