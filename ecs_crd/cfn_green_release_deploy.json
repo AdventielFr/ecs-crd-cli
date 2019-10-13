@@ -112,9 +112,6 @@
                             },
                             {
                                 "Ref": "ServiceName"
-                            },
-                            {
-                                "Ref": "CanaryRelease"
                             }
                         ]
                     ]
