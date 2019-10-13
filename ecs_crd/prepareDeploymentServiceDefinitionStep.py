@@ -54,7 +54,7 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             required = True,
             source_property = 'type',
             parent_property = 'Service.PlacementConstraints.Type',
-            indent = 4
+            indent = 2
         )
 
     def _process_placement_constraints_contraint_expression(self, source, target):
@@ -63,18 +63,18 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             target = target,
             source_property = 'expression',
             parent_property = 'Service.PlacementConstraints.Expression',
-            indent = 6
+            indent = 4
         )
     
     def _process_placement_stategies(self, source, properties):
         """update the placement strategies informations for the service"""
-        if 'placement_stategies' in source:
+        if 'placement_strategies' in source:
             self._log_information(key='Placement Strategies',value='', ljust=10, indent=1)
             placement_stategies = []
-            for item in source['placement_stategies']:
+            for item in source['placement_strategies']:
                 strategy = {}
-                self._process_placement_stategies_strategy_field(item,strategy)
                 self._process_placement_stategies_strategy_type(item, strategy)
+                self._process_placement_stategies_strategy_field(item,strategy)
                 placement_stategies.append(strategy)
             properties['PlacementStrategies'] = placement_stategies
     
@@ -84,9 +84,9 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             target = target,
             source_property = 'field',
             required = True,
-            multi = True,
+            multi = False,
             parent_property = 'Service.PlacementStrategies',
-            indent = 2
+            indent = 4
         )
 
     def _process_placement_stategies_strategy_type(self,source, target):
@@ -98,7 +98,7 @@ class PrepareDeploymentServiceDefinitionStep(CanaryReleaseDeployStep):
             pattern = 'binpack|random|spread',
             multi = True,
             parent_property = 'Service.PlacementStrategies',
-            indent = 6
+            indent = 2
         )
 
     def _process_load_balancer(self):

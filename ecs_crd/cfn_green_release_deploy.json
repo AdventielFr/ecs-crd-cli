@@ -102,12 +102,14 @@
                             "Ref" : "CanaryRelease"
                         }
                     }
-
                 ],
                 "Family": {
                     "Fn::Join": [
                         "-",
                         [
+                            {
+                               "Ref" : "Environment"         
+                            },
                             {
                                 "Ref": "ServiceName"
                             },
