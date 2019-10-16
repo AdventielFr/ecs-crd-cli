@@ -64,6 +64,14 @@ class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
             if exist:
                 raise ValueError(f'There is already a cloudformation stack named for the Green release : {self.infos.green_infos.stack_name}.') 
 
+            # init infos
+            stack = self._find_cloud_formation_stack(self.infos.init_infos.stack_name)
+            if stack and self.infos.action=='deploy':
+                # no recreate init stack for deploy
+                self.infos.init_infos.stack = None
+            
+            self.infos.save()
+
             # blue infos
             blues = list(filter(lambda x: x != green, albs))
             blue = blues[0]
@@ -86,11 +94,7 @@ class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
             self._log_information(key='Fqdn', value=green.dns_name, indent=1, ljust=4)
             self._log_information(key='Dns', value=green.arn, indent=1, ljust=4)
 
-            # init stack
-            stack = self._find_cloud_formation_stack(self.infos.init_infos.stack_name)
-            if stack and self.infos.action=='deploy':
-                # no recreate init stack for deploy
-                self.infos.init_infos.stack = None
+           
             self.infos.save()
             return PrepareDeploymentScaleParametersStep(self.infos, self.logger)
 
@@ -100,12 +104,19 @@ class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
             self.logger.error(self.title, exc_info=True)
             return SendNotificationBySnsStep(self.infos, self.logger)
          
-    def _find_cloud_formation_stack(self, stack_name):
+    def _find_cloud_formation_stack(self, stack_name, next_token=None):
         client = boto3.client('cloudformation', region_name=self.infos.region)
-        response = client.list_stacks(StackStatusFilter=['CREATE_COMPLETE'])
+        response = None
+        if next_token:
+            response = client.list_stacks(StackStatusFilter=['CREATE_COMPLETE'], NextToken=next_token )
+        else:
+            response = client.list_stacks(StackStatusFilter=['CREATE_COMPLETE'])
         count = sum(1 for e in response['StackSummaries'] if e['StackName'] == stack_name)
         if count == 0:
-            return None
+            if 'NextToken' in response:
+                return self._find_cloud_formation_stack(stack_name, response['NextToken'])
+            else:
+                return None
         response = client.describe_stacks(StackName=stack_name)
         if len(response['Stacks']) == 1:
             return response['Stacks'][0]

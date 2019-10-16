@@ -25,4 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - fix: error prepareDeploymentServiceDefinitionStep.py / prep_process_placement_constraints_contraint_expression / source
 
+## [0.50.1] - 2017-10-16
+### Added
 
+- fix: find cloud formation when more one hundred cloudformation stack
