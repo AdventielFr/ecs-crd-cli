@@ -8,68 +8,75 @@ from ecs_crd.prepareDeploymentServiceDefinitionStep import PrepareDeploymentServ
 from ecs_crd.updateCanaryReleaseInfoStep import UpdateCanaryReleaseInfoStep
 from ecs_crd.sendNotificationBySnsStep import SendNotificationBySnsStep
 
+
 class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
 
     def __init__(self, infos, logger):
         """initializes a new instance of the class"""
-        super().__init__(infos, f'Prepare {infos.action} ( Container definitions )', logger)
+        super().__init__(
+            infos, f'Prepare {infos.action} ( Container definitions )', logger)
 
     def _process_container_name(self, source, target):
         """update the name informations for the current container"""
         self._process_property(
-            source = source,
-            target = target,
-            source_property = 'name',
-            multi = True,
-            parent_property = 'Service.Container',
-            default = 'default',
-            indent = 1
+            source=source,
+            target=target,
+            source_property='name',
+            multi=True,
+            parent_property='Service.Container',
+            default='default',
+            indent=1
         )
 
     def _process_container_image(self, source, target):
         """update the image informations for the current container"""
         self._process_property(
-            source = source,
-            target = target,
-            source_property = 'image',
-            parent_property = 'Service.Container',
-            default = '{{account_id}}.dkr.ecr.{{region}}.amazonaws.com/{{name}}:{{version}}',
-            indent = 3
+            source=source,
+            target=target,
+            source_property='image',
+            parent_property='Service.Container',
+            default='{{account_id}}.dkr.ecr.{{region}}.amazonaws.com/{{name}}:{{version}}',
+            indent=3
         )
+        # check exist container image
+        if self._is_container_image_from_ecr(source, target):
+            if not self._exist_container_image_from_ecr(source, target):
+                raise ValueError(
+                    f'The container image {target["Image"]} is unknown in AWS ECR registry.')
 
     def _process_container_cpu(self, source, target):
         """update the cpu informations for the current container"""
         self._process_property(
-            source = source,
-            target = target,
-            source_property = 'cpu',
-            parent_property = 'Service.Container',
-            type = int,
-            default = 128,
-            indent = 3
+            source=source,
+            target=target,
+            source_property='cpu',
+            parent_property='Service.Container',
+            type=int,
+            default=128,
+            indent=3
         )
 
     def _process_container_memory(self, source, target):
         """update the cpu informations for the current container"""
         self._process_property(
-            source = source,
-            target = target,
-            source_property = 'memory',
-            parent_property = 'Service.Container',
-            type = int,
-            default = 128,
-            indent = 3
+            source=source,
+            target=target,
+            source_property='memory',
+            parent_property='Service.Container',
+            type=int,
+            default=128,
+            indent=3
         )
 
     def _process_container_memory_reservation(self, source, target):
         """update the memory reservation informations for the current container"""
         self._process_property(
-            source = source,
-            target = target,
-            source_property = 'memory_reservation',
-            parent_property = 'Service.Container',
-            type = int,
-            indent = 3
+            source=source,
+            target=target,
+            source_property='memory_reservation',
+            parent_property='Service.Container',
+            type=int,
+            indent=3
         )
 
     def _process_container_port_mappings(self, source, target):
@@ -79,14 +86,15 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             self._log_information(key='Port mappings', value='', indent=3)
             for p in source['port_mappings']:
                 port_mapping = {
-                                'HostPort': 0,
-                                'ContainerPort': int(p['container_port'])
-                                }
+                    'HostPort': 0,
+                    'ContainerPort': int(p['container_port'])
+                }
                 if 'host_port' in p:
                     if isinstance(p['host_port'], int):
                         port_mapping['HostPort'] = p['host_port']
                     elif 'green' in p['host_port'] and 'blue' in p['host_port']:
-                        port_mapping['HostPort'] = int(p['host_port'][self.infos.elected_release])
+                        port_mapping['HostPort'] = int(
+                            p['host_port'][self.infos.elected_release])
                 protocol = 'tcp'
                 host_port = ''
                 if port_mapping['HostPort'] == 0:
@@ -104,11 +112,13 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
     def _process_container_entry_point(self, source, target):
         """update the entry point informations for the current container"""
         if 'entry_point' in source:
-            if isinstance(source['entry_point'],list):
+            if isinstance(source['entry_point'], list):
                 target['EntryPoint'] = ','.join(source['entry_point'])
-                self._log_information(key='Entry point', value=target["EntryPoint"], indent=3)
+                self._log_information(
+                    key='Entry point', value=target["EntryPoint"], indent=3)
             else:
-                raise ValueError(f'{source["entry_point"]} is not valid EntryPoint for Container.')
+                raise ValueError(
+                    f'{source["entry_point"]} is not valid EntryPoint for Container.')
 
     def _process_container_environment(self, source, target):
         """update the environment informations for the current container"""
@@ -139,7 +149,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
         if 'secrets' in source:
             self._log_information(key='Secrets', value='', indent=3)
             for elmt in source['secrets']:
-                #TODO A retravailler
+                # TODO A retravailler
                 e = {}
                 for a in elmt.keys():
                     e['Name'] = a
@@ -157,36 +167,39 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
     def _process_container_command(self, source, target):
         """update the command informations for the current container"""
         if 'command' in source:
-            if isinstance(source['command'],list):
+            if isinstance(source['command'], list):
                 self._log_information(key='Command', value='', indent=3)
                 target['Command'] = []
                 for e in source['command']:
                     target['Command'].append(e)
                     self._log_information(key='- '+e, value=None, indent=5)
             else:
-                raise ValueError(f'{source["command"]} is not valid Command for Container.')
+                raise ValueError(
+                    f'{source["command"]} is not valid Command for Container.')
 
     def _process_container_dns_search_domains(self, source, target):
         """update the dns search domain informations for the current container"""
         if 'dns_search_domains' in source:
             if isinstance(source['dns_search_domains'], list):
-                self._log_information(key='Dns Search Domains', value='', indent=3)
+                self._log_information(
+                    key='Dns Search Domains', value='', indent=3)
                 target['DnsSearchDomains'] = []
                 for e in source['dns_search_domains']:
                     target['DnsSearchDomains'].append(e)
                     self._log_information(key='- '+e, value=None, indent=5)
             else:
-                raise ValueError(f'{source["dns_search_domains"]} is not valid DnsSearchDomains for Container.')  
+                raise ValueError(
+                    f'{source["dns_search_domains"]} is not valid DnsSearchDomains for Container.')
 
     def _process_container_disable_networking(self, source, target):
         """update the disable networking informations for the current container"""
         self._process_property(
-            source = source,
-            target = target,
-            source_property = 'disable_networking',
-            parent_property = 'Container',
-            type = bool,
-            indent = 3
+            source=source,
+            target=target,
+            source_property='disable_networking',
+            parent_property='Container',
+            type=bool,
+            indent=3
         )
 
     def _process_container_dns_servers(self, source, target):
@@ -199,7 +212,8 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                     target['DnsServers'].append(e)
                     self._log_information(key='- '+e, value=None, indent=2)
             else:
-                raise ValueError(f'{source["dns_servers"]} is not valid DnsServers for Container.')  
+                raise ValueError(
+                    f'{source["dns_servers"]} is not valid DnsServers for Container.')
 
     def _process_container_links(self, item, container):
         """update the links informations for the current container"""
@@ -231,6 +245,24 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
         self._log_information(
             key='Essential', value=container["Essential"], indent=1)
 
+    def _is_container_image_from_ecr(self, item, container):
+        return container['Image'].startswith(self._bind_data('{{account_id}}.dkr.ecr.{{region}}.amazonaws.com/'))
+
+    def _exist_container_image_from_ecr(self, item, container):
+        client = boto3.client('ecr', region_name=self.infos.region)
+        try:
+            data = container['Image'].split('/')
+            registry = data[0]
+            data = data[1].split(':')
+            repository = data[0]
+            tag = data[1]
+            response = client.describe_images(
+                repositoryName=repository, imageIds=[{"imageTag": tag}])
+            return len(response["imageDetails"]) == 1
+        except Exception as e:
+            self.logger.error(e)
+            return False
+
     def _process_container_privileged(self, item, container):
         """update the privileged informations for the current container"""
         if 'privileged' in item:
@@ -248,10 +280,12 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             container['MountPoints'] = []
             for e in item['mount_points']:
                 mount_point = {}
-                mount_point['ContainerPath'] = self._bind_data(e['container_path'])
+                mount_point['ContainerPath'] = self._bind_data(
+                    e['container_path'])
                 self._log_information(
                     key='- Container Path', value=mount_point["ContainerPath"], indent=2)
-                mount_point['SourceVolume'] = self._bind_data(e['source_volume'])
+                mount_point['SourceVolume'] = self._bind_data(
+                    e['source_volume'])
                 self._log_information(
                     key='  Source Volume', value=mount_point["SourceVolume"], indent=2)
                 mount_point['ReadOnly'] = "false"
@@ -267,32 +301,33 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
     def _process_container_hostname(self, source, target):
         """update the hostname informations for the current container"""
         self._process_property(
-            source = source,
-            target = target,
-            source_property = 'hostname',
-            parent_property = 'Container',
-            indent = 3
+            source=source,
+            target=target,
+            source_property='hostname',
+            parent_property='Container',
+            indent=3
         )
 
     def _process_container_start_timeout(self, source, target):
         """update the start timeout informations for the current container"""
         self._process_property(
-            source = source,
-            target = target,
-            source_property = 'start_timeout',
-            parent_property = 'Container',
-            type = int,
-            indent = 3
+            source=source,
+            target=target,
+            source_property='start_timeout',
+            parent_property='Container',
+            type=int,
+            indent=3
         )
+
     def _process_container_stop_timeout(self, source, target):
         """update the stop timeout informations for the current container"""
         self._process_property(
-            source = source,
-            target = target,
-            source_property = 'stop_timeout',
-            parent_property = 'Container',
-            type = int,
-            indent = 3
+            source=source,
+            target=target,
+            source_property='stop_timeout',
+            parent_property='Container',
+            type=int,
+            indent=3
         )
 
     def _process_container_log_configuration(self, item, container):
@@ -359,10 +394,10 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                 self._process_container_start_timeout(source, target)
                 self._process_container_stop_timeout(source, target)
                 self._process_container_depends_on(source, target)
-                
+
                 cfn.append(target)
             self.infos.save()
-            if self.infos.action=='undeploy':
+            if self.infos.action == 'undeploy':
                 return UpdateCanaryReleaseInfoStep(self.infos, self.logger)
             else:
                 return PrepareDeploymentServiceDefinitionStep(self.infos, self.logger)
@@ -421,4 +456,3 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                 KeyId=k, GrantTokens=['DescribeKey'])
             result.kms_arn.append(response['KeyMetadata']['Arn'])
         return result
-
