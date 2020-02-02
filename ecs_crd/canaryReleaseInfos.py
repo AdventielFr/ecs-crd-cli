@@ -85,11 +85,12 @@ class LoadBalancerInfos:
             if k in keys:
                 self.__dict__[k] = v
 
-
 class ListenerRuleInfos:
     def __init__(self,  **kwargs):
         self.listener_arn = None
         self.configuration = None
+        self.current_priority = 1
+        self.listener_arn = None
         keys = self.__dict__.keys()
         for k, v in kwargs.items():
             if k in keys:

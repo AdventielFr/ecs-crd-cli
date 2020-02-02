@@ -178,7 +178,7 @@ class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
                     if len(listeners) == 1:
                         listener = listeners[0]
                         # on vérifie qu'il y a une règle pour le
-                        if 'rule' not in item:
+                        if 'rules' not in item:
                             container_name = 'default'
                             if 'container' in item['target_group'] and 'name' in item['target_group']['container']:
                                 container_name = item['target_group']['container']['name']

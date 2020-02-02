@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 import boto3
 import time
 from abc import ABC, abstractmethod

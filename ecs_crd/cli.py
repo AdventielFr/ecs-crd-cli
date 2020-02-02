@@ -67,7 +67,7 @@ class Parameters:
 def main():
     pass
 
-@main.command(help='Valide the Deploy configuration file')
+@main.command(help='validate the configuration file')
 @click.option('-e', '--environment', required=True, default='stage', help='Environment to deploy.', show_default=True)
 @click.option('-r', '--region', required=True, default='eu-west-3', help='Amazon Web Service region used to deploy ECS service.', show_default=True)
 @click.option('-f', '--configuration-file', required=False, help='deployment configuration file.')
@@ -88,7 +88,7 @@ def validate(
         canary_step = canary_step.execute()
     sys.exit(canary_infos.exit_code)
 
-@main.command(help='Deploy the ECS service')
+@main.command(help='deploy the ECS service')
 @click.option('-e', '--environment', required=True, default='stage', help='Environment to deploy.', show_default=True)
 @click.option('-r', '--region', required=True, default='eu-west-3', help='Amazon Web Service region used to deploy ECS service.', show_default=True)
 @click.option('-f', '--configuration-file', required=False, help='deployment configuration file.')
@@ -125,7 +125,7 @@ def _common_action(environment, region, configuration_file, configuration_dir, v
     )
     return logger, canary_infos
 
-@main.command(help='Undeploy the ECS service')
+@main.command(help='undeploy the ECS service')
 @click.option('-e', '--environment', required=True, default='stage', help='Environment to deploy.', show_default=True)
 @click.option('-r', '--region', required=True, default='eu-west-3', help='Amazon Web Service region used to deploy ECS service.', show_default=True)
 @click.option('-f', '--configuration-file', required=False, help='deployment configuration file.')
@@ -145,7 +145,6 @@ def undeploy(
     while (canary_step):
         canary_step = canary_step.execute()
     sys.exit(canary_infos.exit_code)
-
 
 @main.command(name='version', help='show CLI version')
 def version():

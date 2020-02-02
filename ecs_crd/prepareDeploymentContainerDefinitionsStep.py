@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import json
 import boto3
 
@@ -141,7 +144,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
         self._log_information(key='Environment', value='', indent=3)
         for e in target['Environment']:
             self._log_information(
-                key='- '+e['Name'], value=e['Value'], indent=5)
+                key='- '+e['Name'], value=e['Value'], indent=4)
 
     def _process_container_secrets(self, source, target):
         """update the secrets informations for the current container"""
@@ -162,7 +165,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                         e['ValueFrom'] = s['arn']
                 target['Secrets'].append(e)
                 self._log_information(
-                    key='- '+e['Name'], value=e['ValueFrom'], indent=5)
+                    key='- '+e['Name'], value=e['ValueFrom'], indent=4)
 
     def _process_container_command(self, source, target):
         """update the command informations for the current container"""

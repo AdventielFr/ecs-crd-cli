@@ -51,6 +51,12 @@ class CanaryReleaseDeployStep(ABC):
         self.logger.info(f'Step Result : {result}')
         self.logger.info('')
 
+    def _to_int(self, val):
+        try:
+            return int(val)
+        except:
+            return None
+
     def _process_property(self, **kwargs):
         origin = None
         source = None
