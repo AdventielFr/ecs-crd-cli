@@ -24,7 +24,7 @@ class ScaleUpServiceStep(CanaryReleaseDeployStep):
             service_arn = self._find_service_arn()
             self.logger.info('')
             self._log_information(key='Service', value=self.infos.green_infos.stack_name)
-            self._log_information(key='ARN', value=service_arn, indent=1)
+            self._log_information(key='Arn', value=service_arn)
             self.logger.info('')
             self.logger.info('Scaling up in progress ...')
             self.logger.info('')

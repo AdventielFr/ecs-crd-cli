@@ -25,8 +25,8 @@ class PrepareDeploymentScaleParametersStep(CanaryReleaseDeployStep):
                     self.infos.scale_infos.desired = int(scale['desired'])
                 if 'wait' in scale:
                     self.infos.scale_infos.wait = int(scale['wait'])
-            self._log_information(key='Desired  Instances', value=self.infos.scale_infos.desired, ljust=18)
-            self._log_information(key='Wait', value=f'{self.infos.scale_infos.wait}s', ljust=18)
+            self._log_information(key='Desired  Instances', value=self.infos.scale_infos.desired,indent=1, ljust=18)
+            self._log_information(key='Wait', value=f'{self.infos.scale_infos.wait}s', indent=1, ljust=18)
             self.infos.save()
             return PrepareDeploymentContainerDefinitionsStep(self.infos, self.logger)
 

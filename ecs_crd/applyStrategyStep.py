@@ -35,8 +35,8 @@ class ChangeRoute53WeightsStep(CanaryReleaseDeployStep):
             blue_weight = 100 - green_weight
 
         self.logger.info('')
-        self._log_information(key='DNS weight blue', value=f"{blue_weight}%")
-        self._log_information(key='DNS weight green', value=f"{green_weight}%")
+        self._log_information(key='Dns weight blue', value=f"{blue_weight}%")
+        self._log_information(key='Dns weight green', value=f"{green_weight}%")
         self.logger.info('')
 
         client = boto3.client('route53')
@@ -121,8 +121,8 @@ class CheckGreenHealthStep(CanaryReleaseDeployStep):
                 state = response['TargetHealthDescriptions'][0]['TargetHealth']['State'].upper()
             self.logger.info('')
             self._log_information(key='Target Group', value=e['OutputKey'][:-3])
-            self._log_information(key='ARN', value=e['OutputValue'], indent=1)
-            self._log_information(key='State', value=state, indent=1)
+            self._log_information(key='Arn', value=e['OutputValue'])
+            self._log_information(key='State', value=state)
             result.append(state)
         return result
 
