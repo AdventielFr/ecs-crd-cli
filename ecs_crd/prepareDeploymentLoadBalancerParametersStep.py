@@ -85,16 +85,15 @@ class PrepareDeploymentLoadBalancerParametersStep(CanaryReleaseDeployStep):
                 if exist_blue_deployment:
                     self.infos.blue_infos.stack_id = exist_blue_deployment['StackId']
                     self.infos.blue_infos.stack_name = f'{self.infos.environment}-{self.infos.service_name}-{blue.canary_release}'
-
+            
             self._log_sub_title('Load balancer "blue" {}'.format('(elected)' if self.infos.elected_release == 'blue' and self.infos.action=='deploy' else ''))
             self._log_information(key='Fqdn', value=blue.dns_name, indent=1, ljust=4)
-            self._log_information(key='ARN', value=blue.arn, indent=1, ljust=4)
+            self._log_information(key='Arn', value=blue.arn, indent=1, ljust=4)
 
             self._log_sub_title('Load balancer "green" {}'.format('(elected)' if self.infos.elected_release == 'green' and self.infos.action=='deploy' else ''))
             self._log_information(key='Fqdn', value=green.dns_name, indent=1, ljust=4)
             self._log_information(key='Dns', value=green.arn, indent=1, ljust=4)
 
-           
             self.infos.save()
             return PrepareDeploymentScaleParametersStep(self.infos, self.logger)
 

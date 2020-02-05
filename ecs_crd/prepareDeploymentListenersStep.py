@@ -51,7 +51,7 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
         host_port = str(self._find_host_port(container_name, container_port))
         host_port = '(dynamic)' if host_port == '0' else host_port
         self._log_sub_title(f'Container "{container_name}:{container_port}"')
-        self._log_information(key="ARN",value=listener_rule_infos.listener_arn, indent=1)
+        self._log_information(key="Arn",value=listener_rule_infos.listener_arn, indent=1)
         self._log_information(key="Port", value=listener_rule_infos.configuration['port'], indent=1)
         self._log_information(key="Rules", value='', indent=1)
         # rules
@@ -159,6 +159,38 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
                 if listener_container_name.lower() == container_name.lower():
                     return item
         return None
+
+    def _convert_2_listener_rule(self, listener_rule_infos, item, rule):
+        listener_rule = {}
+        listener_rule['Type'] = "AWS::ElasticLoadBalancingV2::ListenerRule"
+        listener_rule['Properties'] = {}
+        listener_rule['Properties']['Priority'] = self._calculate_avalaible_priority_rule(listener_rule_infos, rule)
+        listener_rule['Properties']['ListenerArn'] = listener_rule_infos.listener_arn
+        self._log_information(key="- Priority",value=str(listener_rule['Properties']['Priority']), indent=2)
+        # actions
+        listener_rule['Properties']['Actions'] = []
+        self._log_information(key="Actions",value='', indent=4)
+        order = 1
+        add_default_action = True
+        if 'actions' in rule:
+            for action in rule['actions']:
+                action, is_default_action = self._convert_2_action(action, order)
+                listener_rule['Properties']['Actions'].append(action)
+                if is_default_action:
+                    add_default_action = False
+                order +=1
+        # add default forward action to container target group
+        if add_default_action:
+            action, is_default_action = self._convert_2_action_forward(item, order)
+            listener_rule['Properties']['Actions'].append(action)
+        
+        # conditions
+        listener_rule['Properties']['Conditions'] = []
+        if 'conditions' in rule:
+            self._log_information(key="Conditions",value='', indent=4)
+            for condition in rule['conditions']:
+                listener_rule['Properties']['Conditions'].append(self._convert_2_condition(condition))
+        return listener_rule
     
     def _find_last_listener_rule_priority(self, listener_rule_infos):
         client = boto3.client('elbv2', region_name = self.infos.region)
@@ -186,102 +218,38 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
             listener_rule_infos.current_priority += 1
             return result
 
-    def _convert_2_condition_generic(self, item, condition, name):
-        condition[name] = {}
-        condition[name]['Values'] = []
-        for elmt in item['values']:
-            data = self._bind_data(elmt)
-            condition[name]['Values'].append(data)
-        # unique
-        cnv = condition[name]['Values']
-        condition[name]['Values'] = [x for i, x in enumerate(cnv) if i == cnv.index(x)]
-        self._log_listerner_rule_condition(condition, name)
-
     def _convert_2_condition(self, item):
         condition = {}
-        condition['Field'] = item['field'].lower()
+        self._process_property(
+            source = item,
+            target = condition,
+            pattern= 'host-header|http-header|http-request-method|path-pattern|source-ip',
+            source_property = 'field',
+            indent = 5,
+            multi = True
+        )
+        property_name = None
         if condition['Field'] == 'host-header':
-            self._convert_2_condition_generic(item, condition, 'HostHeaderConfig')
+            property_name = 'HostHeaderConfig'
+        elif condition['Field'] == 'http-header':
+            property_name = 'HttpHeaderConfig'
+        elif condition['Field'] == 'http-request-method':
+            property_name = 'HttpRequestMethodConfig'
+        elif condition['Field'] == 'path-pattern':
+            property_name = 'PathPatternConfig'
+        else:
+            property_name = 'SourceIpConfig'
 
-        if condition['Field'] == 'http-header':
-            data = self._bind_data(item['name'])
-            condition['HttpHeaderConfig']['HttpHeaderName'] = data
-            self._convert_2_condition_generic(item, condition, 'HttpHeaderConfig')
-           
-        if condition['Field'] == 'http-request-method':
-            self._convert_2_condition_generic(item, condition, 'HttpRequestMethodConfig')
-
-        if condition['Field'] == 'path-pattern':
-            self._convert_2_condition_generic(item, condition, 'PathPatternConfig')
-
-        if condition['Field'] == 'source-ip':
-            self._convert_2_condition_generic(item, condition, 'SourceIpConfig')
+        condition[property_name] = {}
+        self._log_information(key=property_name,value='',indent=7)
+        condition[property_name]['Values'] = []
+        self._log_information(key='Values',value='',indent=9)
+        for v in item['values']:
+            data = self._bind_data(v)
+            condition[property_name]['Values'].append(data)
+            self._log_information(key='- ' +data,value=None,indent=11)
 
         return condition
-
-    def _log_listerner_rule_condition(self, condition, name):
-        self._log_information(key='- Field', value=condition['Field'], indent=5)
-        self._log_information(key=name, value='', indent=7)
-        for k in condition[name]:
-            if k != 'Values':
-                self._log_information(key='{k}', value=str(condition[name][k]), indent=9)
-        self._log_information(key='Values', value='', indent=9)
-        for v in condition[name]['Values']:
-            self._log_information(key=f'- {v}', value=None, indent=10)
-
-    def _convert_2_action_oidc(self, item, order):
-        action = {}
-        action['Type'] = 'authenticate-oidc'
-        action['Order'] = order
-        action['AuthenticateOidcConfig']= {}
-        action['AuthenticateOidcConfig']['AuthorizationEndpoint'] = self._bind_data(item['authorization_endpoint'])
-        action['AuthenticateOidcConfig']['ClientId'] = self._bind_data(item['client_id'])
-        action['AuthenticateOidcConfig']['ClientSecret'] = self._bind_data(item['client_secret'])
-        action['AuthenticateOidcConfig']['Issuer'] = self._bind_data(item['issuer'])
-        action['AuthenticateOidcConfig']['TokenEndpoint'] = self._bind_data(item['token_endpoint'])
-        action['AuthenticateOidcConfig']['UserInfoEndpoint'] = self._bind_data(item['user_info_endpoint'])
-        if 'on_unauthenticated_request' in item:
-            action['AuthenticateOidcConfig']['OnUnauthenticatedRequest'] = self._bind_data(item['on_unauthenticated_request'])
-        if 'scope' in item:
-            action['AuthenticateOidcConfig']['Scope'] = self._bind_data(item['scope'])
-        if 'session_cookie_name' in item:
-            action['AuthenticateOidcConfig']['SessionCookieName'] = self._bind_data(item['session_cookie_name'])
-        if 'session_timeout' in item:
-            action['AuthenticateOidcConfig']['SessionTimeout'] = item['session_timeout']
-        self._log_listerner_rule_action(action,'AuthenticateOidcConfig')
-        return action, False
-   
-    def _convert_2_action_cognito(self, item, order):
-        action = {}
-        action['Type'] = 'authenticate-cognito'
-        action['Order'] = order
-        action['AuthenticateCognitoConfig'] = {}
-        action['AuthenticateCognitoConfig']['UserPoolArn'] = item['user_pool_arn']
-        action['AuthenticateCognitoConfig']['UserPoolClientId'] = item['user_pool_client_id']
-        action['AuthenticateCognitoConfig']['UserPoolDomain'] = self._bind_data(item['user_pool_domain'])
-        if 'on_unauthenticated_request' in item:
-            action['AuthenticateCognitoConfig']['OnUnauthenticatedRequest'] = self._bind_data(item['on_unauthenticated_request'])
-        if 'scope' in item:
-            action['AuthenticateCognitoConfig']['Scope'] = self._bind_data(item['scope'])
-        if 'session_cookie_name' in item:
-            action['AuthenticateCognitoConfig']['SessionCookieName'] = self._bind_data(item['session_cookie_name'])
-        if 'session_timeout' in item:
-            action['AuthenticateCognitoConfig']['SessionTimeout'] = item['session_timeout']
-        self._log_listerner_rule_action(action,'AuthenticateCognitoConfig')
-        return action, False
-
-    def _convert_2_action_fixed_response(self, item, order):
-        action = {}
-        action['Type'] = 'fixed-response'
-        action['Order'] = order
-        action['FixedResponseConfig'] = {}
-        action['FixedResponseConfig']['StatusCode'] = item['status_code']
-        if 'content_type' in item:
-            action['FixedResponseConfig']['ContentType'] = item['content_type']
-        if 'message_body' in item:
-            action['FixedResponseConfig']['MessageBody'] = self._bind_data(item['message_body'])
-        self._log_listerner_rule_action(action,'FixedResponseConfig')
-        return action, True
 
     def _convert_2_action_forward(self, item, order):
         action = {}
@@ -291,73 +259,45 @@ class PrepareDeploymentListenersStep(CanaryReleaseDeployStep):
         action['TargetGroupArn']['Ref'] = item['TargetGroupArn']['Ref']
         self._log_information(key=f'- Type', value = action['Type'], indent=5)
         self._log_information(key=f'Order', value = action['Order'], indent=7)
+        self._log_information(key='TargetGroupArn', value ='-> container target group created', indent=7)
         return action, True
-
-    def _convert_2_action_redirect(self, item, order):
-        action = {}
-        action['Type'] = 'redirect'
-        action['Order'] = order
-        action['RedirectConfig'] = {}
-        action['RedirectConfig']['StatusCode'] = item['status_code']
-        if 'host' in item:
-            action['RedirectConfig']['Host'] = self._bind_data(item['host'])
-        if 'path' in item:
-            action['RedirectConfig']['Path'] = self._bind_data(item['path'])
-        if 'port' in item:
-            action['RedirectConfig']['Port'] = item['port']
-        if 'protocol' in item:
-            action['RedirectConfig']['Protocol'] = item['protocol']
-        if 'query' in item:
-            action['RedirectConfig']['Query'] = item['query']
-        self._log_listerner_rule_action(action,'RedirectConfig')
-        return action, True
-
-    def _log_listerner_rule_action(self, action, name):
-        self._log_information(key='- Type', value=action['Type'], indent=5)
-        self._log_information(key='Order', value=action['Order'], indent=7)
-        self._log_information(key=name, value='', indent=7)
-        for k in action[name]:
-            self._log_information(key=k, value=action[name][k], indent=9)
 
     def _convert_2_action(self, item, order):
-        if item['type'] == 'authenticate-oidc':
-            return self._convert_2_action_oidc(item, order)
-        if item['type'] == 'authenticate-cognito':
-            return self._convert_2_action_cognito(item, order)
-        if item['type'] == 'fixed-response':
-            return self._convert_2_action_fixed_response(item, order)
-        if item['type'] == 'redirect':
-            return self._convert_2_action_redirect(item, order)
-       
-    def _convert_2_listener_rule(self, listener_rule_infos, item, rule):
-        listener_rule = {}
-        listener_rule['Type'] = "AWS::ElasticLoadBalancingV2::ListenerRule"
-        listener_rule['Properties'] = {}
-        listener_rule['Properties']['Priority'] = self._calculate_avalaible_priority_rule(listener_rule_infos, rule)
-        listener_rule['Properties']['ListenerArn'] = listener_rule_infos.listener_arn
-        self._log_information(key="- Priority",value=str(listener_rule['Properties']['Priority']), indent=2)
-        # actions
-        listener_rule['Properties']['Actions'] = []
-        self._log_information(key="Actions",value='', indent=4)
-        order = 1
-        add_default_action = True
-        if 'actions' in rule:
-            for action in rule['actions']:
-                action, is_default_action = self._convert_2_action(action, order)
-                listener_rule['Properties']['Actions'].append(action)
-                if is_default_action:
-                    add_default_action = False
-                order +=1
-        # add default redirect action to container target group
-        if add_default_action:
-            action, is_default_action = self._convert_2_action_forward(item, order)
-            listener_rule['Properties']['Actions'].append(action)
+        action = {}
+        is_default_action = False
+        # action type
+        self._process_property(
+            source = item,
+            target = action,
+            pattern= 'authenticate-oidc|authenticate-cognito|fixed-response|redirect',
+            source_property = 'type',
+            indent = 5,
+            multi = True
+        )
+        action['Order'] = order if 'order' not in item else item['order']
+        self._log_information(key='Order',value=action['Order'],indent=7)
+        property_name = None
+        if action['Type'] == 'authenticate-oidc':
+            property_name = 'AuthenticateOidcConfig'
+        elif action['Type'] == 'authenticate-cognito':
+            property_name = 'AuthenticateCognitoConfig'
+        elif action['Type'] == 'fixed-response':
+            property_name = 'FixedResponseConfig'
+            is_default_action = True
+        else:
+            property_name = 'RedirectConfig'
+            is_default_action = True
         
-        # conditions
-        listener_rule['Properties']['Conditions'] = []
-        if 'conditions' in rule:
-            self._log_information(key="Conditions",value='', indent=4)
-            for condition in rule['conditions']:
-                listener_rule['Properties']['Conditions'].append(self._convert_2_condition(condition))
-        return listener_rule
-
+        if property_name:
+            action[property_name]= {}
+            self._log_information(key=property_name,value='',indent=7)
+            for k in item['config'].keys():
+                key = self._to_pascal_case(k)
+                src = item['config'][k]
+                if isinstance(src, str):
+                    action[property_name][key] = self._bind_data(src)
+                else:
+                    action[property_name][key] = src
+                self._log_information(key=key,value=action[property_name][key],indent=9)
+        
+        return action, is_default_action

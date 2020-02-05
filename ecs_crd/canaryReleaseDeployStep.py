@@ -173,7 +173,11 @@ class CanaryReleaseDeployStep(ABC):
         return None
 
     def _to_pascal_case(self,text):
-        return ''.join(x.capitalize() or '_' for x in text.split('_'))
+        result = None
+        if not text:
+            return result
+        s = text.split('_')
+        return ''.join(map(lambda i: i.capitalize(),s ))
 
     @abstractmethod
     def _on_execute(self):

@@ -6,29 +6,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [see reference](references/snake_case_reference.yml).
 
-## [0.50.2] - 2017-11-04
+
+## [1.0.0] - 2020-11-04
+### Added
+
+ - multi rules on listerner ( oidc / cognito / fixed-reponse / redirect )
+
+
+## [0.50.2] - 2019-11-04
 ### Added
 
 - fix : check exist container image in AWS ECR before creation cloudformation stack.
 
-## [0.50.1] - 2017-10-16
+## [0.50.1] - 2019-10-16
 ### Added
 
 - fix: find cloud formation when more one hundred cloudformation stack
 
-## [0.20.1] - 2017-10-09
+## [0.20.1] - 2019-10-09
 ### Added
 
 - fix: error prepareDeploymentServiceDefinitionStep.py / prep_process_placement_constraints_contraint_expression / source
 
-## [0.20.0] - 2017-10-09
+## [0.20.0] - 2019-10-09
 ### Added
 
 - multi fqdn management ( allow array or one string for fqdn )
 
 ## [Unreleased]
 
-## [0.17.0] - 2017-10-02
+## [0.17.0] - 2019-10-02
 ### Added
 
 - new command 'validate' for check deployment file

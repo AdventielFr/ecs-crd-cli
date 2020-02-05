@@ -18,7 +18,7 @@ canary:
     on_fail: string
 # Service definition
 service:
-  Project: string
+  project: string
   name: string
   cluster: string
   cpu: integer
@@ -172,9 +172,15 @@ listeners:
       container:
         name: string
         port: integer
-    # Rule definition
-    rule:
-      conditions:
+    # Rule definitions
+    rules:
+      - priority: integer
+        actions:
+          - type: string
+            order: integer
+            config:
+              - keypair
+        conditions:
         - field: string
           values:
             - string

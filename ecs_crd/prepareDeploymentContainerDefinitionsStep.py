@@ -144,7 +144,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
         self._log_information(key='Environment', value='', indent=3)
         for e in target['Environment']:
             self._log_information(
-                key='- '+e['Name'], value=e['Value'], indent=4)
+                key=e['Name'], value=e['Value'], indent=4)
 
     def _process_container_secrets(self, source, target):
         """update the secrets informations for the current container"""
@@ -165,7 +165,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                         e['ValueFrom'] = s['arn']
                 target['Secrets'].append(e)
                 self._log_information(
-                    key='- '+e['Name'], value=e['ValueFrom'], indent=4)
+                    key=e['Name'], value=e['ValueFrom'], indent=4)
 
     def _process_container_command(self, source, target):
         """update the command informations for the current container"""
@@ -346,10 +346,10 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
             key='Log Driver', value=container['LogConfiguration']['LogDriver'], indent=2)
         self._log_information(key='Options', value='', indent=2)
         self._log_information(
-            key='- awslogs-group', value=container['LogConfiguration']['Options']['awslogs-group'], indent=3)
+            key='awslogs-group', value=container['LogConfiguration']['Options']['awslogs-group'], indent=3)
         self._log_information(
-            key='- awslogs-region', value=container['LogConfiguration']['Options']['awslogs-region'], indent=3)
-        self._log_information(key='- awslogs-stream-prefix',
+            key='awslogs-region', value=container['LogConfiguration']['Options']['awslogs-region'], indent=3)
+        self._log_information(key='awslogs-stream-prefix',
                               value=container['LogConfiguration']['Options']['awslogs-stream-prefix'], indent=3)
 
     def _process_container_depends_on(self, item, container):
