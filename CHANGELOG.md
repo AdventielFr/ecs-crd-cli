@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2020-11-04
 ### Added
 
- - multi rules on listerner ( oidc / cognito / fixed-reponse / redirect )
+ - feat : multi rules on listener ( oidc / cognito / fixed-reponse / redirect )
 
 
 ## [0.50.2] - 2019-11-04
