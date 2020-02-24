@@ -26,7 +26,7 @@ setup (
         "Programming Language :: Python :: 3.6"
     ],
     install_requires = [
-        'bleach==3.1.0',
+        'bleach==3.1.1',
         'boto3==1.9.220',
         'botocore==1.12.220',
         'certifi==2019.6.16',
