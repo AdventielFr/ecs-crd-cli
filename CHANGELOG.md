@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [see reference](references/snake_case_reference.yml).
 
+## [1.1.0] - 2020-05-08
+### Added
+
+ - feat : healtcheck on container for dependencies
+
+ - feat : add log configuration definition
+
+ - feat: add dry-run sub command for ecs-crd
+
 
 ## [1.0.0] - 2020-11-04
 ### Added

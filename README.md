@@ -72,9 +72,9 @@ At any time on the command line, it is possible to recover the online help. To d
 
 At any time on the command line, it is possible to recover the version. To do this, simply type version.
 
-#### IV.1.3 - Validate deployment file
+#### IV.1.3 - Dry run deployment file
 
-Before deploying, it is possible to validate the configuration file. For that use the command "validate" of the CLI.
+Before deploying, it is possible to validate the configuration file. For that use the command "dry-run" of the CLI.
 
 #### IV.1.4 Deploy a service
 
@@ -104,7 +104,7 @@ The description file of a deployment is file in yml format. The format of this f
 
 ### V.0 - How to formulate the deployment ?
 
-The canary deployment is based on a declaration that is defined in a file in Yaml format. The reference file is here [see reference](references/snake_case_reference.yml).
+The canary deployment is based on a declaration that is defined in a file in Yaml format. The reference file is here [see reference](_docs_/reference.yml).
 
 ### V.1 - canary tag definition
 

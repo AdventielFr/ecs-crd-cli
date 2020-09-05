@@ -1,18 +1,19 @@
 # Canary deployment definition
 canary:
+  # CanaryGroup definition
   group: string
+  # Canary release défintion
   releases:
     blue: string
     green: string
-  # Scale on start definition
-  scale:
-    desired: integer
-    wait: integer
-  # Strategy deployment definition
+  # Scale definition
+    desired: integer 
+    wait: integer 
+  # Strategy definition
   strategy:
     - weight: integer
       wait: integer
-  # Sns Notification definition
+  # Sns notification definition
   sns_topic_notifications:
     on_success: string
     on_fail: string
@@ -53,14 +54,14 @@ service:
         scope: string
       host:
         source_path: string
-  # Container definition
+  # Containers definition
   containers:
     - name: string
-      image: nginx
+      image: string
       cpu: integer
       memory: integer
       memory_reservation: integer
-      # Container port mappings definition
+      # Port mappings definition
       port_mappings:
         - host_port: intger
           container_port: integer
@@ -90,15 +91,33 @@ service:
       essential: boolean
       privileged: boolean
       hostname: string
-      # Mount point definition
+      # Mount points definition
       mount_points:
         - container_path: string
           source_volume: string
           read_only: boolean
       start_timeout: integer
       stop_timeout: integer
+      # Depend on définition
       depends_on:
-        - string
+        - condtion: string
+          container_name: string
+      # Health check definition
+      health_check:
+        command:
+          - string
+        interval: integer
+        retries: integer
+        start_period: integer
+        timeout: integer
+      # Log configuration definition
+      log_configuration:
+        log_driver: string
+        options:
+          - keypair
+        secret_options:
+          - keypair
+
   # Iam service roles definition
   iam_roles:
     # Task execution role definition
@@ -147,7 +166,7 @@ service:
             evaluation_periods: integer
             threshold: integer
             comparison_operator: string
-# target group definition
+# Target group definition
 target_groups:
   - port: integer
     container:

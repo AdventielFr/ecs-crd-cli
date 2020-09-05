@@ -241,12 +241,12 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
         """update the essential informations for the current container"""
         container["Essential"] = "true"
         if 'essential' in item:
-            if item['essential'].lower().strip() == 'true':
+            if str(item['essential']).lower().strip() == 'true':
                 container['Essential'] = "true"
             else:
                 container['Essential'] = "false"
         self._log_information(
-            key='Essential', value=container["Essential"], indent=1)
+            key='Essential', value=container["Essential"], indent=3)
 
     def _is_container_image_from_ecr(self, item, container):
         return container['Image'].startswith(self._bind_data('{{account_id}}.dkr.ecr.{{region}}.amazonaws.com/'))
@@ -275,6 +275,36 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                 container['Privileged'] = "false"
             self._log_information(
                 key='Priviliged', value=container["Privileged"], indent=1)
+    
+    def _process_container_healthcheck(self, item, container):
+        """update the healthcheck informations for the current container"""
+        if 'health_check' in item:
+            self._log_information(key='HealthCheck', value='', indent=2)
+            health_check = {}
+            health_check['Command'] = []
+            self._log_information(
+                key='Command', value='', indent=3)
+            for command in item['health_check']['command']:
+                health_check['Command'].append(command)
+                self._log_information(
+                    key= '- ' +command, value=None, indent=4)                
+            if 'interval' in item['health_check']:
+                health_check['Interval'] = int(item['health_check']['interval'])
+                self._log_information(
+                    key='Interval', value=mount_point["Interval"], indent=2)
+            if 'retries' in item['health_check']:
+                health_check['Retries'] = int(item['health_check']['retries'])    
+                self._log_information(
+                    key='Retries', value=health_check["Retries"], indent=2)
+            if 'start_period' in item['health_check']:
+                health_check['StartPeriod'] = int(item['health_check']['start_period'])
+                self._log_information(
+                    key='StartPeriod', value=health_check["StartPeriod"], indent=2)
+            if 'timeout' in item['health_check']:
+                health_check['Timeout'] = int(item['health_check']['timeout'])   
+                self._log_information(
+                    key='Timeout', value=health_check["Timeout"], indent=2)         
+            container['HealthCheck'] = health_check
 
     def _process_container_mount_points(self, item, container):
         """update the mount points informations for the current container"""
@@ -335,37 +365,64 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
 
     def _process_container_log_configuration(self, item, container):
         container['LogConfiguration'] = {}
-        container['LogConfiguration']['LogDriver'] = 'awslogs'
-        container['LogConfiguration']['Options'] = {}
-        container['LogConfiguration']['Options'][
-            'awslogs-group'] = f'/aws/ecs/{self.infos.cluster_name}/service/{self.infos.service_name}'
-        container['LogConfiguration']['Options']['awslogs-region'] = self.infos.region
-        container['LogConfiguration']['Options']['awslogs-stream-prefix'] = self.infos.service_version
-        self._log_information(key='Log Configuration', value='', indent=1)
+        if 'log_configuration' in item:
+            log_configuration = item['log_configuration']
+            container['LogConfiguration']['LogDriver'] = log_configuration['log_driver']
+            if 'options' in log_configuration:
+                container['LogConfiguration']['Options'] = {}
+                e = {}
+                for k, v in log_configuration['options'].items():
+                    e['Name'] = k
+                    e['Value'] = self._bind_data(str(v))
+                    container['LogConfiguration']['Options'].append(e)
+            if 'secret_options' in log_configuration:
+                container['LogConfiguration']['SecretOptions'] = {}
+                for i in log_configuration['secret_options']:
+                    e = {}
+                    e['Name'] = i['name']
+                    e['ValueFrom'] = self._bind_data(i['value_from'])
+                    container['LogConfiguration']['SecretOptions'].append(e)                 
+
+        else:
+            container['LogConfiguration'] = {}
+            container['LogConfiguration']['LogDriver'] = 'awslogs'
+            container['LogConfiguration']['Options'] = {}
+            container['LogConfiguration']['Options'][
+                'awslogs-group'] = f'/aws/ecs/{self.infos.cluster_name}/service/{self.infos.service_name}'
+            container['LogConfiguration']['Options']['awslogs-region'] = self.infos.region
+            container['LogConfiguration']['Options']['awslogs-stream-prefix'] = self.infos.service_version
+
+        self._log_information(key='Log Configuration', value='', indent=3)
         self._log_information(
-            key='Log Driver', value=container['LogConfiguration']['LogDriver'], indent=2)
-        self._log_information(key='Options', value='', indent=2)
-        self._log_information(
-            key='awslogs-group', value=container['LogConfiguration']['Options']['awslogs-group'], indent=3)
-        self._log_information(
-            key='awslogs-region', value=container['LogConfiguration']['Options']['awslogs-region'], indent=3)
-        self._log_information(key='awslogs-stream-prefix',
-                              value=container['LogConfiguration']['Options']['awslogs-stream-prefix'], indent=3)
+            key='Log Driver', value = container['LogConfiguration']['LogDriver'], indent=4)
+        self._log_information(key='Options', value='', indent=4)
+        for k,v in container['LogConfiguration']['Options'].items():
+            self._log_information(
+                key='- Name', value= k, indent=5)
+            self._log_information(
+                key='  Value', value= v, indent=5)
+        if 'SecretOptions' in container['LogConfiguration']:
+            self._log_information(key='SecretOptions', value='', indent=4)
+            for k, v in container['LogConfiguration']['SecretOptions'].items():
+                self._log_information(
+                    key='- Name', value=k, indent=5)
+                self._log_information(
+                    key='  ValueFrom', value=v, indent=5)                
 
     def _process_container_depends_on(self, item, container):
         """update the depends on for the current container"""
         if 'depends_on' in item:
             container['DependsOn'] = []
-            self._log_information(key='Depend On', value='', indent=1)
+            self._log_information(key='Depend On', value='', indent=4)
             for i in item['depends_on']:
                 depends_on = {}
                 depends_on['Condition'] = i['condition']
                 depends_on['ContainerName'] = i['container_name']
                 container['DependsOn'].append(depends_on)
                 self._log_information(
-                    key='- ContainerName', value=depends_on['ContainerName'], indent=2)
+                    key='- ContainerName', value=depends_on['ContainerName'], indent=5)
                 self._log_information(
-                    key='  Condition', value=depends_on['Condition'], indent=2)
+                    key='  Condition', value=depends_on['Condition'], indent=5)
 
     def _on_execute(self):
         """operation containing the processing performed by this step"""
@@ -397,6 +454,7 @@ class PrepareDeploymentContainerDefinitionsStep(CanaryReleaseDeployStep):
                 self._process_container_start_timeout(source, target)
                 self._process_container_stop_timeout(source, target)
                 self._process_container_depends_on(source, target)
+                self._process_container_healthcheck(source, target)
 
                 cfn.append(target)
             self.infos.save()
