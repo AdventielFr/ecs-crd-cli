@@ -37,7 +37,7 @@ setup (
         'idna==2.8',
         'jmespath==0.9.4',
         'pkginfo==1.5.0.1',
-        'Pygments==2.4.2',
+        'Pygments==2.7.4',
         'python-dateutil==2.8.0',
         'PyYAML==5.1.2',
         'readme-renderer==24.0',
