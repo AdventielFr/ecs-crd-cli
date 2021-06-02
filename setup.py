@@ -47,7 +47,7 @@ setup (
         'six==1.12.0',
         'termcolor==1.1.0',
         'tqdm==4.35.0',
-        'urllib3==1.25.3',
+        'urllib3==1.26.5',
         'webencodings==0.5.1'
     ],
     packages = find_packages(exclude=["tests/*"]),
