@@ -8,6 +8,8 @@ import time
 import datetime
 import re
 import boto3
+import hashlib
+
 class CanaryReleaseDeployStep(ABC):
 
     def __init__(self, infos, title, logger, with_end_log=True, with_start_log=True):
@@ -210,7 +212,7 @@ class CanaryReleaseDeployStep(ABC):
         result += f'{seconds}s'
         return result
 
-    def _generate_name(self, canary_release='', suffix=''):
+    def _generate_name(self, canary_release='', suffix='', add_hash=False):
         env = f'{self.infos.environment}-'
         o = None
         if len(env) > 6:
@@ -220,6 +222,11 @@ class CanaryReleaseDeployStep(ABC):
         if len(cr) > 2:
             o = slice(2)
             cr = cr[2:]
-        o = slice(64 - (len(env) + len(cr) + len(suffix)+1))
+        # add 7 (length of hash) if needed
+        o = slice(64 - (len(env) + len(cr) + len(suffix) + 7 + 1))
         var = self.infos.service_name[o]
-        return f'{env}{var}{suffix}-{cr}'
+        if add_hash:
+            hash_suffix = hashlib.sha1(str(time.time()).encode()).hexdigest()[:7]
+            return f'{env}{var}{suffix}-{cr}-{hash_suffix}'
+        else:
+            return f'{env}{var}{suffix}-{cr}'
