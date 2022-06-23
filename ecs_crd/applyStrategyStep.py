@@ -7,6 +7,7 @@ from ecs_crd.canaryReleaseDeployStep import CanaryReleaseDeployStep
 from ecs_crd.rollbackChangeRoute53WeightsStep import RollbackChangeRoute53WeightsStep
 from ecs_crd.updateCanaryReleaseInfoStep import UpdateCanaryReleaseInfoStep
 
+
 class ChangeRoute53WeightsStep(CanaryReleaseDeployStep):
 
     def __init__(self, infos, logger):
@@ -51,7 +52,7 @@ class ChangeRoute53WeightsStep(CanaryReleaseDeployStep):
     def _change_weights_by_fqdn(self, fqdn, client, blue_weight, green_weight):
         self._log_information(key='Fqdn', value=fqdn.name)
         client.change_resource_record_sets(
-            HostedZoneId = fqdn.hosted_zone_id,
+            HostedZoneId=fqdn.hosted_zone_id,
             ChangeBatch={
                 'Comment': 'Alter Route53 records sets for canary blue-green deployment',
                 'Changes': [
@@ -88,7 +89,6 @@ class ChangeRoute53WeightsStep(CanaryReleaseDeployStep):
                 ]
             }
         )
-       
 
     def _consume_strategy(self):
         """consume the first strategy of the canary release's definition"""
@@ -139,13 +139,13 @@ class CheckGreenHealthStep(CanaryReleaseDeployStep):
                 is_full_healthy = self._is_all_full_states(health_checks, ['HEALTHY'])
                 if is_full_healthy:
                     break
-                is_healthy_and_initial = self._is_all_full_states(health_checks, ['HEALTHY', 'INITIAL'])
-                if is_healthy_and_initial:
+                else:
                     if self._nb_initial_test < self._nb_max_initial_test:
                         self._wait(15, f'Waiting for service to start (attempts {self._nb_initial_test}/{self._nb_max_initial_test})')
                         self._nb_initial_test += 1
                         continue
-                raise ValueError(f'Invalid state for Green TargetGroup')
+                    raise ValueError(f'{"Invalid state for Green TargetGroup"}')
+
             # all health check is ok
             if self.infos.strategy_infos:
                 return ChangeRoute53WeightsStep(self.infos, self.logger)
@@ -160,6 +160,6 @@ class CheckGreenHealthStep(CanaryReleaseDeployStep):
 
     def _find_target_group_arns(self):
         client = boto3.client('cloudformation', region_name=self.infos.region)
-        response = client.describe_stacks(StackName= self.infos.green_infos.stack_name)
-        return  filter(lambda x: x['OutputKey'].startswith('TargetGroup'),response['Stacks'][0]['Outputs'])
-        
+        response = client.describe_stacks(StackName=self.infos.green_infos.stack_name)
+        return filter(lambda x: x['OutputKey'].startswith('TargetGroup'), response['Stacks'][0]['Outputs'])
+
