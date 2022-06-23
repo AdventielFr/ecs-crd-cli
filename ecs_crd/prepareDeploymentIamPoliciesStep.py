@@ -95,7 +95,9 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
             role = {}
             role['Type'] = 'AWS::IAM::Role'
             role['Properties'] = {}
-            role['Properties']['RoleName'] = self._generate_name(suffix='-ecs-task', canary_release=self.infos.green_infos.canary_release)
+            # Force hash suffix to avoid ecs-agent cache problems with iam role suppression and re-createion
+            # https://github.com/aws/amazon-ecs-agent/issues/2137
+            role['Properties']['RoleName'] = self._generate_name(suffix='-ecs-task', canary_release=self.infos.green_infos.canary_release, add_hash=True)
             self._log_information(key='Name', value=role['Properties']['RoleName'])
             role['Properties']['AssumeRolePolicyDocument'] = {}
             role['Properties']['AssumeRolePolicyDocument']['Version'] = '2012-10-17'
@@ -122,7 +124,9 @@ class PrepareDeploymentIamPoliciesStep(CanaryReleaseDeployStep):
         self.logger.info('')
         self._log_sub_title('Task execution role definition')
         self.logger.info('')
-        self.infos.green_infos.stack['Resources']['TaskExecutionRole']['Properties']['RoleName'] = self._generate_name(suffix='-ecs-exec-task', canary_release=self.infos.green_infos.canary_release)
+        # Force hash suffix to avoid ecs-agent cache problems with iam role suppression and re-createion
+        # https://github.com/aws/amazon-ecs-agent/issues/2137
+        self.infos.green_infos.stack['Resources']['TaskExecutionRole']['Properties']['RoleName'] = self._generate_name(suffix='-ecs-exec-task', canary_release=self.infos.green_infos.canary_release, add_hash=True)
         self._log_information(key='Name', value=self.infos.green_infos.stack['Resources']['TaskExecutionRole']['Properties']['RoleName'])
         policy_infos = self._find_all_task_execution_role_policies()
         if policy_infos:
