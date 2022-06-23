@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [see reference](references/snake_case_reference.yml).
 
+## [1.2.0] - 2022-06-23
+### Removed
+
+ - feat: remove unneeded constraint
+
+### Fixed
+
+ - fix: Use hash suffix in task and execution role names to avoid ecs caching problems
+
 ## [1.1.0] - 2020-05-08
 ### Added
 
