@@ -317,6 +317,7 @@ def test_process_application_autoscaling_scalable_target_min_capacity_valid():
     assert target['MinCapacity'] == source['min_capacity']  
 
 def test_process_application_autoscaling_scalable_target_max_capacity_invalid():
+    step.infos.scale_infos = ScaleInfos()
     source = {}
     source['max_capacity'] = 'a'
     target = {}
