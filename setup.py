@@ -29,7 +29,7 @@ setup (
         'bleach==3.1.0',
         'boto3==1.9.220',
         'botocore==1.12.220',
-        'certifi==2019.6.16',
+        'certifi==2022.12.7',
         'chardet==3.0.4',
         'Click==7.0',
         'docutils==0.15.2',
